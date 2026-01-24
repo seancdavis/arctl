@@ -1,5 +1,5 @@
 {
-  "id": "efdbac15-f418-4f8a-84dd-aa2e8d16f55e",
+  "id": "a9c9a394-be89-4f18-816f-0eab430830eb",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -179,6 +179,13 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true
+        },
+        "sync_enabled": {
+          "name": "sync_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {},

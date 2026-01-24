@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { Run, Site, SyncState } from "../types/runs";
 
-type View = "kanban" | "archive";
+type View = "kanban" | "archive" | "settings";
 
 interface KanbanState {
   // Data

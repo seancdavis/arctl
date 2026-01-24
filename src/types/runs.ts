@@ -32,6 +32,7 @@ export interface Site {
   id: string;
   name: string;
   updatedAt: string;
+  syncEnabled: boolean;
 }
 
 export interface SyncState {
@@ -46,6 +47,7 @@ export interface CreateRunRequest {
   site_id: string;
   branch?: string;
   prompt: string;
+  model?: string;
 }
 
 export interface AddSessionRequest {

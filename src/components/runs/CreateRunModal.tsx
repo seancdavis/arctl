@@ -10,6 +10,7 @@ interface CreateRunModalProps {
     site_id: string;
     branch?: string;
     prompt: string;
+    model?: string;
   }) => Promise<unknown>;
 }
 
@@ -24,6 +25,7 @@ export function CreateRunModal({
   const [siteId, setSiteId] = useState(lastUsedSiteId || "");
   const [branch, setBranch] = useState("");
   const [prompt, setPrompt] = useState("");
+  const [model, setModel] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,11 +47,13 @@ export function CreateRunModal({
         site_id: siteId,
         branch: branch.trim() || undefined,
         prompt: prompt.trim(),
+        model: model || undefined,
       });
       setLastUsedSiteId(siteId);
       setSiteId("");
       setBranch("");
       setPrompt("");
+      setModel("");
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create run");
@@ -116,6 +120,26 @@ export function CreateRunModal({
               placeholder="e.g., feature/my-branch"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="model"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Model (optional)
+            </label>
+            <select
+              id="model"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Default</option>
+              <option value="claude">Claude</option>
+              <option value="gemini">Gemini</option>
+              <option value="codex">Codex</option>
+            </select>
           </div>
 
           <div>

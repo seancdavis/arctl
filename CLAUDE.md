@@ -95,9 +95,26 @@ See `.agents/` directory for documentation:
 - `netlify-serverless.md` - Functions patterns
 - `netlify-blobs.md`, `netlify-env-variables.md`, etc.
 
+## API Routes
+
+All Netlify Functions must use clean `/api` routes via the `config.path` export. Never use `/.netlify/functions/` paths.
+
+| Function | Route | Methods |
+|----------|-------|---------|
+| runs.mts | `/api/runs` | GET, POST |
+| run.mts | `/api/runs/:id` | GET, PATCH |
+| run-sessions.mts | `/api/runs/:id/sessions` | GET, POST |
+| run-pr.mts | `/api/runs/:id/pull-request` | POST |
+| sites.mts | `/api/sites` | GET |
+| sync-trigger.mts | `/api/sync/trigger` | GET, POST |
+| sync-worker-background.mts | `/api/sync/worker` | POST |
+
+When functions call other functions internally, use `new URL(req.url).origin` to get the base URL.
+
 ## Notes
 
 - All API responses use **camelCase** (matches Drizzle schema)
 - Frontend types in `src/types/runs.ts` must match Drizzle schema
 - Sync worker logs prefixed with `[sync-worker]`, trigger with `[sync-trigger]`
 - Sites are cached for 5 minutes before re-fetching from Netlify API
+- Netlify API returns lowercase state values - always normalize to UPPERCASE when storing

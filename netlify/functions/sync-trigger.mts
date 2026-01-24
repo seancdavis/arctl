@@ -37,12 +37,11 @@ export default async (req: Request, context: Context) => {
   }
 
   // Trigger the background sync worker
-  const siteUrl =
-    context.site.url || `http://localhost:${Netlify.env.get("PORT") || 8888}`;
+  const siteUrl = new URL(req.url).origin;
 
   console.log("[sync-trigger] Triggering background worker at", siteUrl);
   try {
-    await fetch(`${siteUrl}/.netlify/functions/sync-worker-background`, {
+    await fetch(`${siteUrl}/api/sync/worker`, {
       method: "POST",
     });
     console.log("[sync-trigger] Background worker triggered successfully");

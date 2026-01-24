@@ -57,7 +57,7 @@ export default async (req: Request, context: Context) => {
 
     // Create session via Netlify API
     const createRes = await fetch(
-      `https://api.netlify.com/api/v1/sites/${run.siteId}/agent/runs/${runId}/sessions`,
+      `https://api.netlify.com/api/v1/agent_runners/${runId}/sessions`,
       {
         method: "POST",
         headers: {
@@ -98,9 +98,9 @@ export default async (req: Request, context: Context) => {
     }
 
     // Trigger sync
-    const siteUrl = context.site.url || `http://localhost:8888`;
+    const siteUrl = new URL(req.url).origin;
     try {
-      await fetch(`${siteUrl}/.netlify/functions/sync-trigger`, {
+      await fetch(`${siteUrl}/api/sync/trigger`, {
         method: "POST",
       });
     } catch (e) {

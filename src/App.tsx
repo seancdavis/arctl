@@ -5,6 +5,7 @@ import { useSyncStatus } from "./hooks/useSyncStatus";
 import { Header } from "./components/layout/Header";
 import { KanbanBoard } from "./components/kanban/KanbanBoard";
 import { ArchiveView } from "./components/archive/ArchiveView";
+import { SettingsView } from "./components/settings/SettingsView";
 import { CreateRunModal } from "./components/runs/CreateRunModal";
 
 function App() {
@@ -55,19 +56,21 @@ function App() {
           </div>
         )}
 
-        {view === "kanban" ? (
+        {view === "kanban" && (
           <KanbanBoard
             runs={runs}
             onArchive={archiveRun}
             onCreatePR={createPullRequest}
             onAddSession={addSession}
           />
-        ) : (
+        )}
+        {view === "archive" && (
           <ArchiveView
             runs={archivedRuns}
             onUnarchive={unarchiveRun}
           />
         )}
+        {view === "settings" && <SettingsView />}
       </main>
 
       <CreateRunModal

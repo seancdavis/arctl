@@ -1,6 +1,6 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
-import { runs, sessions, syncState } from "../../db/schema.ts";
+import { runs, sessions, sites, syncState } from "../../db/schema.ts";
 import { eq, isNull } from "drizzle-orm";
 
 // Backoff schedule in seconds
@@ -17,16 +17,17 @@ export default async (req: Request, context: Context) => {
   console.log("[sync-worker] Starting sync");
 
   const pat = Netlify.env.get("NETLIFY_PAT");
+  console.log(`[sync-worker] PAT exists: ${!!pat}, length: ${pat?.length || 0}`);
   if (!pat) {
     console.error("[sync-worker] NETLIFY_PAT not configured");
     return;
   }
 
-  // Get all non-archived runs from our DB
-  const dbRuns = await db.select().from(runs).where(isNull(runs.archivedAt));
-  const siteIds = [...new Set(dbRuns.map((r) => r.siteId))];
+  // Get all sites with sync enabled
+  const enabledSites = await db.select().from(sites).where(eq(sites.syncEnabled, true));
+  const siteIds = enabledSites.map((s) => s.id);
 
-  console.log(`[sync-worker] Found ${dbRuns.length} runs across ${siteIds.length} sites`);
+  console.log(`[sync-worker] Found ${enabledSites.length} enabled sites to sync`);
 
   let anyStateChanged = false;
   let runsUpdated = 0;
@@ -34,18 +35,22 @@ export default async (req: Request, context: Context) => {
 
   for (const siteId of siteIds) {
     try {
-      const res = await fetch(
-        `https://api.netlify.com/api/v1/sites/${siteId}/agent/runs`,
-        { headers: { Authorization: `Bearer ${pat}` } }
-      );
+      const apiUrl = `https://api.netlify.com/api/v1/agent_runners?site_id=${siteId}`;
+      console.log(`[sync-worker] Fetching: ${apiUrl}`);
+      const res = await fetch(apiUrl, { headers: { Authorization: `Bearer ${pat}` } });
 
+      console.log(`[sync-worker] Response status: ${res.status}`);
       if (!res.ok) {
-        console.error(`[sync-worker] Failed to fetch runs for site ${siteId}: ${res.status}`);
+        const errorText = await res.text();
+        console.error(`[sync-worker] Failed to fetch runs for site ${siteId}: ${res.status} ${errorText}`);
         continue;
       }
 
       const netlifyRuns = await res.json();
       console.log(`[sync-worker] Site ${siteId}: ${netlifyRuns.length} runs from API`);
+      if (netlifyRuns.length > 0) {
+        console.log(`[sync-worker] First run:`, JSON.stringify(netlifyRuns[0], null, 2));
+      }
       const now = new Date();
 
       for (const netlifyRun of netlifyRuns) {
@@ -55,9 +60,9 @@ export default async (req: Request, context: Context) => {
           .where(eq(runs.id, netlifyRun.id));
 
         if (existingRun) {
-          const stateChanged = existingRun.state !== netlifyRun.state;
-          const prChanged = existingRun.pullRequestUrl !== netlifyRun.pull_request_url;
-          const previewChanged = existingRun.deployPreviewUrl !== netlifyRun.deploy_preview_url;
+          const stateChanged = existingRun.state !== (netlifyRun.state || "").toUpperCase();
+          const prChanged = existingRun.pullRequestUrl !== netlifyRun.pr_url;
+          const previewChanged = existingRun.deployPreviewUrl !== netlifyRun.latest_session_deploy_url;
 
           if (stateChanged || prChanged || previewChanged) {
             anyStateChanged = true;
@@ -66,11 +71,11 @@ export default async (req: Request, context: Context) => {
             await db
               .update(runs)
               .set({
-                state: netlifyRun.state || existingRun.state,
+                state: (netlifyRun.state || existingRun.state).toUpperCase(),
                 title: netlifyRun.title || existingRun.title,
                 branch: netlifyRun.branch || existingRun.branch,
-                pullRequestUrl: netlifyRun.pull_request_url || existingRun.pullRequestUrl,
-                deployPreviewUrl: netlifyRun.deploy_preview_url || existingRun.deployPreviewUrl,
+                pullRequestUrl: netlifyRun.pr_url || existingRun.pullRequestUrl,
+                deployPreviewUrl: netlifyRun.latest_session_deploy_url || existingRun.deployPreviewUrl,
                 updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,
                 syncedAt: now,
               })
@@ -95,10 +100,10 @@ export default async (req: Request, context: Context) => {
             siteId: siteId,
             siteName: site?.name || null,
             title: netlifyRun.title || null,
-            state: netlifyRun.state || "NEW",
+            state: (netlifyRun.state || "NEW").toUpperCase(),
             branch: netlifyRun.branch || null,
-            pullRequestUrl: netlifyRun.pull_request_url || null,
-            deployPreviewUrl: netlifyRun.deploy_preview_url || null,
+            pullRequestUrl: netlifyRun.pr_url || null,
+            deployPreviewUrl: netlifyRun.latest_session_deploy_url || null,
             createdAt: netlifyRun.created_at ? new Date(netlifyRun.created_at) : now,
             updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,
             syncedAt: now,
@@ -110,7 +115,7 @@ export default async (req: Request, context: Context) => {
         // Sync sessions
         try {
           const sessionsRes = await fetch(
-            `https://api.netlify.com/api/v1/sites/${siteId}/agent/runs/${netlifyRun.id}/sessions`,
+            `https://api.netlify.com/api/v1/agent_runners/${netlifyRun.id}/sessions`,
             { headers: { Authorization: `Bearer ${pat}` } }
           );
 
@@ -186,4 +191,6 @@ export default async (req: Request, context: Context) => {
   console.log(`[sync-worker] Next sync in ${newBackoffSeconds}s (consecutive no-change: ${newConsecutiveNoChange})`);
 };
 
-export const config: Config = {};
+export const config: Config = {
+  path: "/api/sync/worker",
+};

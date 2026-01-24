@@ -58,7 +58,7 @@ export default async (req: Request, context: Context) => {
 
   // Create PR via Netlify API
   const createRes = await fetch(
-    `https://api.netlify.com/api/v1/sites/${run.siteId}/agent/runs/${runId}/pull_request`,
+    `https://api.netlify.com/api/v1/agent_runners/${runId}/pull_request`,
     {
       method: "POST",
       headers: {
@@ -83,7 +83,7 @@ export default async (req: Request, context: Context) => {
   await db
     .update(runs)
     .set({
-      pullRequestUrl: result.pull_request_url || result.url,
+      pullRequestUrl: result.pr_url || null,
       updatedAt: now,
     })
     .where(eq(runs.id, runId));

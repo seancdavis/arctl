@@ -26,7 +26,8 @@ CREATE TABLE "sessions" (
 CREATE TABLE "sites" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
-	"updated_at" timestamp NOT NULL
+	"updated_at" timestamp NOT NULL,
+	"sync_enabled" boolean DEFAULT false NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "sync_state" (
