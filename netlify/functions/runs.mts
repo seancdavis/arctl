@@ -7,6 +7,7 @@ export default async (req: Request, context: Context) => {
   if (req.method === "GET") {
     const url = new URL(req.url);
     const includeArchived = url.searchParams.get("archived") === "true";
+    console.log(`[runs] GET runs (archived: ${includeArchived})`);
 
     const result = includeArchived
       ? await db
@@ -28,6 +29,7 @@ export default async (req: Request, context: Context) => {
   if (req.method === "POST") {
     const body = await req.json();
     const { site_id, branch, prompt } = body;
+    console.log(`[runs] POST new run for site ${site_id}`);
 
     if (!site_id || !prompt) {
       return new Response(
@@ -102,6 +104,7 @@ export default async (req: Request, context: Context) => {
     }
 
     const [run] = await db.select().from(runs).where(eq(runs.id, netlifyRun.id));
+    console.log(`[runs] Created run ${run.id} (${run.state})`);
 
     return new Response(JSON.stringify(run), {
       status: 201,

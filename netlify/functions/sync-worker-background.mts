@@ -1,22 +1,11 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { runs, sessions, syncState } from "../../db/schema.ts";
-import { eq, isNull, inArray } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 
 // Backoff schedule in seconds
 const BACKOFF_SCHEDULE = [
-  30, // 0: 30 seconds
-  60, // 1: 1 minute
-  120, // 2: 2 minutes
-  300, // 3: 5 minutes
-  900, // 4: 15 minutes
-  1800, // 5: 30 minutes
-  3600, // 6: 1 hour
-  7200, // 7: 2 hours
-  21600, // 8: 6 hours
-  43200, // 9: 12 hours
-  86400, // 10: 1 day
-  345600, // 11+: 4 days (cap)
+  30, 60, 120, 300, 900, 1800, 3600, 7200, 21600, 43200, 86400, 345600,
 ];
 
 function getBackoffSeconds(consecutiveNoChange: number): number {
@@ -25,26 +14,24 @@ function getBackoffSeconds(consecutiveNoChange: number): number {
 }
 
 export default async (req: Request, context: Context) => {
+  console.log("[sync-worker] Starting sync");
+
   const pat = Netlify.env.get("NETLIFY_PAT");
   if (!pat) {
-    console.error("NETLIFY_PAT not configured");
+    console.error("[sync-worker] NETLIFY_PAT not configured");
     return;
   }
 
-  console.log("Starting sync...");
-
   // Get all non-archived runs from our DB
-  const dbRuns = await db
-    .select()
-    .from(runs)
-    .where(isNull(runs.archivedAt));
-
-  // Get unique site IDs
+  const dbRuns = await db.select().from(runs).where(isNull(runs.archivedAt));
   const siteIds = [...new Set(dbRuns.map((r) => r.siteId))];
 
-  let anyStateChanged = false;
+  console.log(`[sync-worker] Found ${dbRuns.length} runs across ${siteIds.length} sites`);
 
-  // Fetch runs from Netlify API for each site
+  let anyStateChanged = false;
+  let runsUpdated = 0;
+  let runsInserted = 0;
+
   for (const siteId of siteIds) {
     try {
       const res = await fetch(
@@ -53,11 +40,12 @@ export default async (req: Request, context: Context) => {
       );
 
       if (!res.ok) {
-        console.error(`Failed to fetch runs for site ${siteId}: ${res.status}`);
+        console.error(`[sync-worker] Failed to fetch runs for site ${siteId}: ${res.status}`);
         continue;
       }
 
       const netlifyRuns = await res.json();
+      console.log(`[sync-worker] Site ${siteId}: ${netlifyRuns.length} runs from API`);
       const now = new Date();
 
       for (const netlifyRun of netlifyRuns) {
@@ -68,13 +56,12 @@ export default async (req: Request, context: Context) => {
 
         if (existingRun) {
           const stateChanged = existingRun.state !== netlifyRun.state;
-          const prChanged =
-            existingRun.pullRequestUrl !== netlifyRun.pull_request_url;
-          const previewChanged =
-            existingRun.deployPreviewUrl !== netlifyRun.deploy_preview_url;
+          const prChanged = existingRun.pullRequestUrl !== netlifyRun.pull_request_url;
+          const previewChanged = existingRun.deployPreviewUrl !== netlifyRun.deploy_preview_url;
 
           if (stateChanged || prChanged || previewChanged) {
             anyStateChanged = true;
+            runsUpdated++;
 
             await db
               .update(runs)
@@ -82,29 +69,20 @@ export default async (req: Request, context: Context) => {
                 state: netlifyRun.state || existingRun.state,
                 title: netlifyRun.title || existingRun.title,
                 branch: netlifyRun.branch || existingRun.branch,
-                pullRequestUrl:
-                  netlifyRun.pull_request_url || existingRun.pullRequestUrl,
-                deployPreviewUrl:
-                  netlifyRun.deploy_preview_url || existingRun.deployPreviewUrl,
-                updatedAt: netlifyRun.updated_at
-                  ? new Date(netlifyRun.updated_at)
-                  : now,
+                pullRequestUrl: netlifyRun.pull_request_url || existingRun.pullRequestUrl,
+                deployPreviewUrl: netlifyRun.deploy_preview_url || existingRun.deployPreviewUrl,
+                updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,
                 syncedAt: now,
               })
               .where(eq(runs.id, netlifyRun.id));
 
-            console.log(
-              `Updated run ${netlifyRun.id}: ${existingRun.state} -> ${netlifyRun.state}`
-            );
+            console.log(`[sync-worker] Updated run ${netlifyRun.id}: ${existingRun.state} -> ${netlifyRun.state}`);
           } else {
-            await db
-              .update(runs)
-              .set({ syncedAt: now })
-              .where(eq(runs.id, netlifyRun.id));
+            await db.update(runs).set({ syncedAt: now }).where(eq(runs.id, netlifyRun.id));
           }
         } else {
-          // New run found - insert it
           anyStateChanged = true;
+          runsInserted++;
 
           const siteRes = await fetch(
             `https://api.netlify.com/api/v1/sites/${siteId}`,
@@ -121,19 +99,15 @@ export default async (req: Request, context: Context) => {
             branch: netlifyRun.branch || null,
             pullRequestUrl: netlifyRun.pull_request_url || null,
             deployPreviewUrl: netlifyRun.deploy_preview_url || null,
-            createdAt: netlifyRun.created_at
-              ? new Date(netlifyRun.created_at)
-              : now,
-            updatedAt: netlifyRun.updated_at
-              ? new Date(netlifyRun.updated_at)
-              : now,
+            createdAt: netlifyRun.created_at ? new Date(netlifyRun.created_at) : now,
+            updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,
             syncedAt: now,
           });
 
-          console.log(`Inserted new run ${netlifyRun.id}`);
+          console.log(`[sync-worker] Inserted new run ${netlifyRun.id} (${netlifyRun.state})`);
         }
 
-        // Sync sessions for this run
+        // Sync sessions
         try {
           const sessionsRes = await fetch(
             `https://api.netlify.com/api/v1/sites/${siteId}/agent/runs/${netlifyRun.id}/sessions`,
@@ -154,46 +128,33 @@ export default async (req: Request, context: Context) => {
                   runId: netlifyRun.id,
                   state: session.state || "NEW",
                   prompt: session.prompt || null,
-                  createdAt: session.created_at
-                    ? new Date(session.created_at)
-                    : now,
-                  updatedAt: session.updated_at
-                    ? new Date(session.updated_at)
-                    : now,
+                  createdAt: session.created_at ? new Date(session.created_at) : now,
+                  updatedAt: session.updated_at ? new Date(session.updated_at) : now,
                 });
               } else if (existingSession.state !== session.state) {
                 await db
                   .update(sessions)
                   .set({
                     state: session.state,
-                    updatedAt: session.updated_at
-                      ? new Date(session.updated_at)
-                      : now,
+                    updatedAt: session.updated_at ? new Date(session.updated_at) : now,
                   })
                   .where(eq(sessions.id, session.id));
               }
             }
           }
         } catch (e) {
-          console.error(`Failed to sync sessions for run ${netlifyRun.id}:`, e);
+          console.error(`[sync-worker] Failed to sync sessions for run ${netlifyRun.id}:`, e);
         }
       }
     } catch (e) {
-      console.error(`Failed to sync site ${siteId}:`, e);
+      console.error(`[sync-worker] Failed to sync site ${siteId}:`, e);
     }
   }
 
   // Update sync state
-  const [currentSyncState] = await db
-    .select()
-    .from(syncState)
-    .where(eq(syncState.id, 1));
-
+  const [currentSyncState] = await db.select().from(syncState).where(eq(syncState.id, 1));
   const now = new Date();
-  const newConsecutiveNoChange = anyStateChanged
-    ? 0
-    : (currentSyncState?.consecutiveNoChange || 0) + 1;
-
+  const newConsecutiveNoChange = anyStateChanged ? 0 : (currentSyncState?.consecutiveNoChange || 0) + 1;
   const newBackoffSeconds = getBackoffSeconds(newConsecutiveNoChange);
   const nextSyncAt = new Date(Date.now() + newBackoffSeconds * 1000);
 
@@ -217,27 +178,12 @@ export default async (req: Request, context: Context) => {
     });
   }
 
-  console.log(
-    `Sync complete. State changed: ${anyStateChanged}. Next sync in ${newBackoffSeconds}s`
-  );
+  // Summary
+  const activeRuns = await db.select().from(runs).where(isNull(runs.archivedAt));
+  const activeCount = activeRuns.filter((r) => r.state === "NEW" || r.state === "RUNNING").length;
 
-  // Check if there are still active runs
-  const activeRuns = await db
-    .select()
-    .from(runs)
-    .where(isNull(runs.archivedAt));
-
-  const hasActiveRuns = activeRuns.some(
-    (r) => r.state === "NEW" || r.state === "RUNNING"
-  );
-
-  if (hasActiveRuns) {
-    console.log(`Active runs exist. Next sync scheduled in ${newBackoffSeconds}s`);
-  } else {
-    console.log("No active runs. Stopping sync loop.");
-  }
+  console.log(`[sync-worker] Sync complete: ${runsInserted} inserted, ${runsUpdated} updated, ${activeCount} active runs`);
+  console.log(`[sync-worker] Next sync in ${newBackoffSeconds}s (consecutive no-change: ${newConsecutiveNoChange})`);
 };
 
-export const config: Config = {
-  // Background functions don't need a path
-};
+export const config: Config = {};

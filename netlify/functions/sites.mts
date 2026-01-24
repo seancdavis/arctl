@@ -29,10 +29,13 @@ export default async (req: Request, context: Context) => {
     cachedSites.some((s) => s.updatedAt > fiveMinutesAgo);
 
   if (hasFreshCache) {
+    console.log(`[sites] Returning ${cachedSites.length} cached sites`);
     return new Response(JSON.stringify(cachedSites), {
       headers: { "Content-Type": "application/json" },
     });
   }
+
+  console.log("[sites] Cache stale, fetching from Netlify API");
 
   // Fetch sites from Netlify API
   const sitesRes = await fetch(
@@ -72,6 +75,7 @@ export default async (req: Request, context: Context) => {
   }
 
   const result = await db.select().from(sites).orderBy(desc(sites.updatedAt));
+  console.log(`[sites] Fetched and cached ${result.length} sites`);
 
   return new Response(JSON.stringify(result), {
     headers: { "Content-Type": "application/json" },
