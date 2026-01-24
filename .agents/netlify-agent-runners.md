@@ -2,6 +2,8 @@
 
 Internal API reference for interacting with Agent Runner endpoints.
 
+**See also:** `netlify-agent-runner-response-examples.md` for real response examples.
+
 ---
 
 ## Base URL

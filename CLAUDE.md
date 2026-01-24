@@ -91,6 +91,8 @@ npm run db:studio    # Open Drizzle Studio
 ## Netlify Primitives Reference
 
 See `.agents/` directory for documentation:
+- `netlify-agent-runners.md` - Agent Runners API endpoints
+- `netlify-agent-runner-response-examples.md` - Real API response examples
 - `netlify-db.md` - Database (using Drizzle ORM, not raw SQL)
 - `netlify-serverless.md` - Functions patterns
 - `netlify-blobs.md`, `netlify-env-variables.md`, etc.
