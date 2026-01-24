@@ -2,43 +2,44 @@ export type RunState = "NEW" | "RUNNING" | "DONE" | "ERROR" | "ARCHIVED";
 
 export type KanbanColumn = "new" | "running" | "review" | "pr_open" | "error";
 
+// Matches Drizzle schema (camelCase)
 export interface Run {
   id: string;
-  site_id: string;
-  site_name: string | null;
+  siteId: string;
+  siteName: string | null;
   title: string | null;
   state: RunState;
   branch: string | null;
-  pull_request_url: string | null;
-  deploy_preview_url: string | null;
-  created_at: string;
-  updated_at: string;
-  synced_at: string | null;
-  archived_at: string | null;
-  custom_notes: string | null;
+  pullRequestUrl: string | null;
+  deployPreviewUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  syncedAt: string | null;
+  archivedAt: string | null;
+  customNotes: string | null;
 }
 
 export interface Session {
   id: string;
-  run_id: string;
+  runId: string;
   state: string;
   prompt: string | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Site {
   id: string;
   name: string;
-  updated_at: string;
+  updatedAt: string;
 }
 
 export interface SyncState {
   id: number;
-  last_sync_at: string | null;
-  next_sync_at: string | null;
-  backoff_seconds: number;
-  consecutive_no_change: number;
+  lastSyncAt: string | null;
+  nextSyncAt: string | null;
+  backoffSeconds: number;
+  consecutiveNoChange: number;
 }
 
 export interface CreateRunRequest {
@@ -57,7 +58,7 @@ export interface UpdateRunRequest {
 }
 
 export function getKanbanColumn(run: Run): KanbanColumn | null {
-  if (run.archived_at) return null;
+  if (run.archivedAt) return null;
 
   switch (run.state) {
     case "NEW":
@@ -65,7 +66,7 @@ export function getKanbanColumn(run: Run): KanbanColumn | null {
     case "RUNNING":
       return "running";
     case "DONE":
-      return run.pull_request_url ? "pr_open" : "review";
+      return run.pullRequestUrl ? "pr_open" : "review";
     case "ERROR":
       return "error";
     case "ARCHIVED":

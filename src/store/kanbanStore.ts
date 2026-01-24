@@ -70,7 +70,7 @@ export const useKanbanStore = create<KanbanState>((set) => ({
       if (!run) return state;
       return {
         runs: state.runs.filter((r) => r.id !== runId),
-        archivedRuns: [{ ...run, archived_at: new Date().toISOString() }, ...state.archivedRuns],
+        archivedRuns: [{ ...run, archivedAt: new Date().toISOString() }, ...state.archivedRuns],
       };
     }),
   restoreFromArchive: (run) =>

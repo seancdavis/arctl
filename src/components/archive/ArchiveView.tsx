@@ -94,7 +94,7 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-gray-500">
-                  {run.site_name || "Unknown"}
+                  {run.siteName || "Unknown"}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -107,16 +107,16 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {formatDate(run.created_at)}
+                {formatDate(run.createdAt)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {run.archived_at ? formatDate(run.archived_at) : "-"}
+                {run.archivedAt ? formatDate(run.archivedAt) : "-"}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
                 <div className="flex gap-2">
-                  {run.pull_request_url && (
+                  {run.pullRequestUrl && (
                     <a
-                      href={run.pull_request_url}
+                      href={run.pullRequestUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800"
@@ -124,9 +124,9 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
                       PR
                     </a>
                   )}
-                  {run.deploy_preview_url && (
+                  {run.deployPreviewUrl && (
                     <a
-                      href={run.deploy_preview_url}
+                      href={run.deployPreviewUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-green-600 hover:text-green-800"
@@ -134,7 +134,7 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
                       Preview
                     </a>
                   )}
-                  {!run.pull_request_url && !run.deploy_preview_url && (
+                  {!run.pullRequestUrl && !run.deployPreviewUrl && (
                     <span className="text-gray-400">-</span>
                   )}
                 </div>

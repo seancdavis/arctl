@@ -18,14 +18,14 @@ export function useSyncStatus() {
   );
 
   const formatLastSync = () => {
-    if (!syncState?.last_sync_at) return "Never";
-    const date = new Date(syncState.last_sync_at);
+    if (!syncState?.lastSyncAt) return "Never";
+    const date = new Date(syncState.lastSyncAt);
     return date.toLocaleTimeString();
   };
 
   const formatNextSync = () => {
-    if (!syncState?.next_sync_at) return null;
-    const date = new Date(syncState.next_sync_at);
+    if (!syncState?.nextSyncAt) return null;
+    const date = new Date(syncState.nextSyncAt);
     const now = new Date();
     const diff = date.getTime() - now.getTime();
     if (diff <= 0) return "Now";

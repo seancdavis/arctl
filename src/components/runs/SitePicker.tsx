@@ -20,7 +20,7 @@ export function SitePicker({
       if (a.id === lastUsedSiteId) return -1;
       if (b.id === lastUsedSiteId) return 1;
       return (
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );
     });
   }, [sites, lastUsedSiteId]);

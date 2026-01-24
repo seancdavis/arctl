@@ -1,10 +1,9 @@
 import type { Context, Config } from "@netlify/functions";
-import { sql, runMigrations } from "./lib/db.mts";
-import type { Run } from "./lib/types.mts";
+import { db } from "../../db/index.ts";
+import { runs, sessions } from "../../db/schema.ts";
+import { eq, asc } from "drizzle-orm";
 
 export default async (req: Request, context: Context) => {
-  await runMigrations();
-
   const url = new URL(req.url);
   const pathParts = url.pathname.split("/");
   const runId = pathParts[pathParts.length - 1];
@@ -17,7 +16,7 @@ export default async (req: Request, context: Context) => {
   }
 
   if (req.method === "GET") {
-    const [run] = await sql`SELECT * FROM runs WHERE id = ${runId}`;
+    const [run] = await db.select().from(runs).where(eq(runs.id, runId));
 
     if (!run) {
       return new Response(JSON.stringify({ error: "Run not found" }), {
@@ -26,12 +25,13 @@ export default async (req: Request, context: Context) => {
       });
     }
 
-    // Also get sessions for this run
-    const sessions = await sql`
-      SELECT * FROM sessions WHERE run_id = ${runId} ORDER BY created_at ASC
-    `;
+    const runSessions = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.runId, runId))
+      .orderBy(asc(sessions.createdAt));
 
-    return new Response(JSON.stringify({ ...run, sessions }), {
+    return new Response(JSON.stringify({ ...run, sessions: runSessions }), {
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -40,7 +40,7 @@ export default async (req: Request, context: Context) => {
     const body = await req.json();
     const { custom_notes, archived } = body;
 
-    const [existingRun] = await sql`SELECT * FROM runs WHERE id = ${runId}`;
+    const [existingRun] = await db.select().from(runs).where(eq(runs.id, runId));
     if (!existingRun) {
       return new Response(JSON.stringify({ error: "Run not found" }), {
         status: 404,
@@ -48,34 +48,22 @@ export default async (req: Request, context: Context) => {
       });
     }
 
-    const now = new Date().toISOString();
+    const now = new Date();
+    const updates: Partial<typeof runs.$inferInsert> = { updatedAt: now };
 
     if (archived === true) {
-      await sql`
-        UPDATE runs SET
-          archived_at = ${now},
-          updated_at = ${now}
-        WHERE id = ${runId}
-      `;
+      updates.archivedAt = now;
     } else if (archived === false) {
-      await sql`
-        UPDATE runs SET
-          archived_at = NULL,
-          updated_at = ${now}
-        WHERE id = ${runId}
-      `;
+      updates.archivedAt = null;
     }
 
     if (custom_notes !== undefined) {
-      await sql`
-        UPDATE runs SET
-          custom_notes = ${custom_notes},
-          updated_at = ${now}
-        WHERE id = ${runId}
-      `;
+      updates.customNotes = custom_notes;
     }
 
-    const [run] = await sql`SELECT * FROM runs WHERE id = ${runId}`;
+    await db.update(runs).set(updates).where(eq(runs.id, runId));
+
+    const [run] = await db.select().from(runs).where(eq(runs.id, runId));
     return new Response(JSON.stringify(run), {
       headers: { "Content-Type": "application/json" },
     });

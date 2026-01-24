@@ -1,10 +1,9 @@
 import type { Context, Config } from "@netlify/functions";
-import { sql, runMigrations } from "./lib/db.mts";
-import type { Site } from "./lib/types.mts";
+import { db } from "../../db/index.ts";
+import { sites } from "../../db/schema.ts";
+import { desc } from "drizzle-orm";
 
 export default async (req: Request, context: Context) => {
-  await runMigrations();
-
   if (req.method !== "GET") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
@@ -21,13 +20,13 @@ export default async (req: Request, context: Context) => {
   }
 
   // Try to get sites from cache first
-  const cachedSites = await sql`SELECT * FROM sites ORDER BY updated_at DESC`;
+  const cachedSites = await db.select().from(sites).orderBy(desc(sites.updatedAt));
 
   // Check if cache is fresh (less than 5 minutes old)
-  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
   const hasFreshCache =
     cachedSites.length > 0 &&
-    cachedSites.some((s: Site) => s.updated_at > fiveMinutesAgo);
+    cachedSites.some((s) => s.updatedAt > fiveMinutesAgo);
 
   if (hasFreshCache) {
     return new Response(JSON.stringify(cachedSites), {
@@ -36,9 +35,10 @@ export default async (req: Request, context: Context) => {
   }
 
   // Fetch sites from Netlify API
-  const sitesRes = await fetch("https://api.netlify.com/api/v1/sites?per_page=100", {
-    headers: { Authorization: `Bearer ${pat}` },
-  });
+  const sitesRes = await fetch(
+    "https://api.netlify.com/api/v1/sites?per_page=100",
+    { headers: { Authorization: `Bearer ${pat}` } }
+  );
 
   if (!sitesRes.ok) {
     // If API fails but we have cached data, return that
@@ -47,29 +47,33 @@ export default async (req: Request, context: Context) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response(
-      JSON.stringify({ error: "Failed to fetch sites" }),
-      { status: 502, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Failed to fetch sites" }), {
+      status: 502,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const netlifySites = await sitesRes.json();
-  const now = new Date().toISOString();
+  const now = new Date();
 
-  // Update cache
+  // Update cache - upsert each site
   for (const site of netlifySites) {
-    await sql`
-      INSERT INTO sites (id, name, updated_at)
-      VALUES (${site.id}, ${site.name}, ${now})
-      ON CONFLICT (id) DO UPDATE SET
-        name = EXCLUDED.name,
-        updated_at = EXCLUDED.updated_at
-    `;
+    await db
+      .insert(sites)
+      .values({
+        id: site.id,
+        name: site.name,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: sites.id,
+        set: { name: site.name, updatedAt: now },
+      });
   }
 
-  const sites = await sql`SELECT * FROM sites ORDER BY updated_at DESC`;
+  const result = await db.select().from(sites).orderBy(desc(sites.updatedAt));
 
-  return new Response(JSON.stringify(sites), {
+  return new Response(JSON.stringify(result), {
     headers: { "Content-Type": "application/json" },
   });
 };

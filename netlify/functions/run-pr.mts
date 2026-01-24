@@ -1,9 +1,9 @@
 import type { Context, Config } from "@netlify/functions";
-import { sql, runMigrations } from "./lib/db.mts";
+import { db } from "../../db/index.ts";
+import { runs } from "../../db/schema.ts";
+import { eq } from "drizzle-orm";
 
 export default async (req: Request, context: Context) => {
-  await runMigrations();
-
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
@@ -23,8 +23,7 @@ export default async (req: Request, context: Context) => {
     });
   }
 
-  // Get the run to find the site_id
-  const [run] = await sql`SELECT * FROM runs WHERE id = ${runId}`;
+  const [run] = await db.select().from(runs).where(eq(runs.id, runId));
   if (!run) {
     return new Response(JSON.stringify({ error: "Run not found" }), {
       status: 404,
@@ -39,9 +38,12 @@ export default async (req: Request, context: Context) => {
     );
   }
 
-  if (run.pull_request_url) {
+  if (run.pullRequestUrl) {
     return new Response(
-      JSON.stringify({ error: "PR already exists", pull_request_url: run.pull_request_url }),
+      JSON.stringify({
+        error: "PR already exists",
+        pull_request_url: run.pullRequestUrl,
+      }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -56,7 +58,7 @@ export default async (req: Request, context: Context) => {
 
   // Create PR via Netlify API
   const createRes = await fetch(
-    `https://api.netlify.com/api/v1/sites/${run.site_id}/agent/runs/${runId}/pull_request`,
+    `https://api.netlify.com/api/v1/sites/${run.siteId}/agent/runs/${runId}/pull_request`,
     {
       method: "POST",
       headers: {
@@ -75,17 +77,19 @@ export default async (req: Request, context: Context) => {
   }
 
   const result = await createRes.json();
-  const now = new Date().toISOString();
+  const now = new Date();
 
   // Update our database with the PR URL
-  await sql`
-    UPDATE runs SET
-      pull_request_url = ${result.pull_request_url || result.url},
-      updated_at = ${now}
-    WHERE id = ${runId}
-  `;
+  await db
+    .update(runs)
+    .set({
+      pullRequestUrl: result.pull_request_url || result.url,
+      updatedAt: now,
+    })
+    .where(eq(runs.id, runId));
 
-  const [updatedRun] = await sql`SELECT * FROM runs WHERE id = ${runId}`;
+  const [updatedRun] = await db.select().from(runs).where(eq(runs.id, runId));
+
   return new Response(JSON.stringify(updatedRun), {
     headers: { "Content-Type": "application/json" },
   });

@@ -32,11 +32,11 @@ export function KanbanBoard({
       }
     }
 
-    // Sort each column by created_at descending
+    // Sort each column by createdAt descending
     for (const column of COLUMN_ORDER) {
       grouped[column].sort(
         (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     }
 

@@ -82,7 +82,7 @@ export function KanbanCard({
               d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
             />
           </svg>
-          <span>{run.site_name || "Unknown Site"}</span>
+          <span>{run.siteName || "Unknown Site"}</span>
         </div>
         {run.branch && (
           <div className="flex items-center gap-1">
@@ -105,12 +105,12 @@ export function KanbanCard({
       </div>
 
       <div className="text-xs text-gray-400 mb-3">
-        {formatDate(run.created_at)}
+        {formatDate(run.createdAt)}
       </div>
 
-      {run.pull_request_url && (
+      {run.pullRequestUrl && (
         <a
-          href={run.pull_request_url}
+          href={run.pullRequestUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mb-2"
@@ -122,9 +122,9 @@ export function KanbanCard({
         </a>
       )}
 
-      {run.deploy_preview_url && (
+      {run.deployPreviewUrl && (
         <a
-          href={run.deploy_preview_url}
+          href={run.deployPreviewUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800 mb-2"
@@ -153,7 +153,7 @@ export function KanbanCard({
       )}
 
       <div className="flex flex-wrap gap-1">
-        {run.state === "DONE" && !run.pull_request_url && (
+        {run.state === "DONE" && !run.pullRequestUrl && (
           <button
             onClick={() => onCreatePR(run.id)}
             className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"

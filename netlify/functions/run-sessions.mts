@@ -1,9 +1,9 @@
 import type { Context, Config } from "@netlify/functions";
-import { sql, runMigrations } from "./lib/db.mts";
+import { db } from "../../db/index.ts";
+import { runs, sessions } from "../../db/schema.ts";
+import { eq, asc } from "drizzle-orm";
 
 export default async (req: Request, context: Context) => {
-  await runMigrations();
-
   const url = new URL(req.url);
   // Path: /api/runs/:id/sessions
   const pathParts = url.pathname.split("/");
@@ -17,10 +17,13 @@ export default async (req: Request, context: Context) => {
   }
 
   if (req.method === "GET") {
-    const sessions = await sql`
-      SELECT * FROM sessions WHERE run_id = ${runId} ORDER BY created_at ASC
-    `;
-    return new Response(JSON.stringify(sessions), {
+    const result = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.runId, runId))
+      .orderBy(asc(sessions.createdAt));
+
+    return new Response(JSON.stringify(result), {
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -36,8 +39,7 @@ export default async (req: Request, context: Context) => {
       });
     }
 
-    // Get the run to find the site_id
-    const [run] = await sql`SELECT * FROM runs WHERE id = ${runId}`;
+    const [run] = await db.select().from(runs).where(eq(runs.id, runId));
     if (!run) {
       return new Response(JSON.stringify({ error: "Run not found" }), {
         status: 404,
@@ -55,7 +57,7 @@ export default async (req: Request, context: Context) => {
 
     // Create session via Netlify API
     const createRes = await fetch(
-      `https://api.netlify.com/api/v1/sites/${run.site_id}/agent/runs/${runId}/sessions`,
+      `https://api.netlify.com/api/v1/sites/${run.siteId}/agent/runs/${runId}/sessions`,
       {
         method: "POST",
         headers: {
@@ -75,35 +77,41 @@ export default async (req: Request, context: Context) => {
     }
 
     const netlifySession = await createRes.json();
-    const now = new Date().toISOString();
+    const now = new Date();
 
     // Insert into our database
-    await sql`
-      INSERT INTO sessions (id, run_id, state, prompt, created_at, updated_at)
-      VALUES (
-        ${netlifySession.id},
-        ${runId},
-        ${netlifySession.state || "NEW"},
-        ${prompt},
-        ${netlifySession.created_at || now},
-        ${netlifySession.updated_at || now}
-      )
-    `;
+    await db.insert(sessions).values({
+      id: netlifySession.id,
+      runId: runId,
+      state: netlifySession.state || "NEW",
+      prompt: prompt,
+      createdAt: netlifySession.created_at ? new Date(netlifySession.created_at) : now,
+      updatedAt: netlifySession.updated_at ? new Date(netlifySession.updated_at) : now,
+    });
 
     // Update run state to RUNNING if it was DONE
     if (run.state === "DONE") {
-      await sql`
-        UPDATE runs SET state = 'RUNNING', updated_at = ${now}
-        WHERE id = ${runId}
-      `;
+      await db
+        .update(runs)
+        .set({ state: "RUNNING", updatedAt: now })
+        .where(eq(runs.id, runId));
     }
 
-    // Trigger sync to ensure background worker is running
-    await fetch(`${context.site.url}/.netlify/functions/sync-trigger`, {
-      method: "POST",
-    });
+    // Trigger sync
+    const siteUrl = context.site.url || `http://localhost:8888`;
+    try {
+      await fetch(`${siteUrl}/.netlify/functions/sync-trigger`, {
+        method: "POST",
+      });
+    } catch (e) {
+      console.error("Failed to trigger sync:", e);
+    }
 
-    const [session] = await sql`SELECT * FROM sessions WHERE id = ${netlifySession.id}`;
+    const [session] = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.id, netlifySession.id));
+
     return new Response(JSON.stringify(session), {
       status: 201,
       headers: { "Content-Type": "application/json" },
