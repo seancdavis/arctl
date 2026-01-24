@@ -1,7 +1,7 @@
 import { useSyncStatus } from "../../hooks/useSyncStatus";
 
 export function SyncStatus() {
-  const { refresh, formatLastSync, formatNextSync } = useSyncStatus();
+  const { isSyncing, refresh, formatLastSync, formatNextSync } = useSyncStatus();
 
   const nextSync = formatNextSync();
 
@@ -21,11 +21,12 @@ export function SyncStatus() {
 
       <button
         onClick={() => refresh(true)}
-        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+        disabled={isSyncing}
+        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
         title="Refresh now (resets backoff)"
       >
         <svg
-          className="w-4 h-4"
+          className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
