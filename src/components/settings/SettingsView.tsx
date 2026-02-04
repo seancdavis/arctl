@@ -1,7 +1,15 @@
+import { useMemo } from "react";
 import { useSites } from "../../hooks/useSites";
 
 export function SettingsView() {
   const { sites, toggleSiteSync } = useSites();
+
+  // Sort sites alphabetically by name
+  const sortedSites = useMemo(() => {
+    return [...sites].sort((a, b) =>
+      a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+    );
+  }, [sites]);
 
   const enabledCount = sites.filter((s) => s.syncEnabled).length;
 
@@ -22,12 +30,12 @@ export function SettingsView() {
           </span>
         </div>
 
-        {sites.length === 0 ? (
+        {sortedSites.length === 0 ? (
           <div className="px-4 py-8 text-center text-gray-500">
             No sites found. Sites will appear here after loading.
           </div>
         ) : (
-          sites.map((site) => (
+          sortedSites.map((site) => (
             <div
               key={site.id}
               className="flex items-center justify-between px-4 py-3 hover:bg-gray-50"

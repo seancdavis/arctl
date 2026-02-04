@@ -14,15 +14,17 @@ export function SitePicker({
   onChange,
   lastUsedSiteId,
 }: SitePickerProps) {
-  // Sort sites: last used first, then by most recently updated
+  // Filter to only enabled sites, sort by most recently updated (last used first)
   const sortedSites = useMemo(() => {
-    return [...sites].sort((a, b) => {
-      if (a.id === lastUsedSiteId) return -1;
-      if (b.id === lastUsedSiteId) return 1;
-      return (
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      );
-    });
+    return [...sites]
+      .filter((site) => site.syncEnabled)
+      .sort((a, b) => {
+        if (a.id === lastUsedSiteId) return -1;
+        if (b.id === lastUsedSiteId) return 1;
+        return (
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
+      });
   }, [sites, lastUsedSiteId]);
 
   return (
