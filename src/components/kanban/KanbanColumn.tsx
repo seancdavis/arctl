@@ -25,15 +25,15 @@ export function KanbanColumn({
         className={`rounded-t-lg px-3 py-2 ${config.color} border-b-2`}
       >
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">{config.title}</h2>
-          <span className="text-sm text-gray-600 bg-white/50 px-2 py-0.5 rounded-full">
+          <h2 className="font-semibold text-[var(--text-primary)]">{config.title}</h2>
+          <span className="text-sm text-[var(--text-secondary)] bg-black/20 px-2 py-0.5 rounded-full">
             {runs.length}
           </span>
         </div>
       </div>
-      <div className="bg-gray-50 rounded-b-lg p-2 min-h-[calc(100vh-220px)] space-y-2">
+      <div className="bg-[var(--surface-1)] rounded-b-lg p-2 min-h-[calc(100vh-220px)] space-y-2">
         {runs.length === 0 ? (
-          <div className="text-center text-gray-400 text-sm py-8">
+          <div className="text-center text-[var(--text-tertiary)] text-sm py-8">
             No runs
           </div>
         ) : (

@@ -20,21 +20,21 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
   const getStateColor = (state: string) => {
     switch (state) {
       case "DONE":
-        return "bg-green-100 text-green-700";
+        return "bg-green-900/40 text-green-400";
       case "ERROR":
-        return "bg-red-100 text-red-700";
+        return "bg-red-900/40 text-red-400";
       case "ARCHIVED":
-        return "bg-gray-100 text-gray-700";
+        return "bg-[var(--surface-4)] text-[var(--text-secondary)]";
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-[var(--surface-4)] text-[var(--text-secondary)]";
     }
   };
 
   if (runs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+      <div className="flex flex-col items-center justify-center py-16 text-[var(--text-secondary)]">
         <svg
-          className="w-16 h-16 mb-4 text-gray-300"
+          className="w-16 h-16 mb-4 text-[var(--text-tertiary)]"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -46,7 +46,7 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
             d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
           />
         </svg>
-        <h3 className="text-lg font-medium text-gray-700 mb-1">
+        <h3 className="text-lg font-medium text-[var(--text-primary)] mb-1">
           No Archived Runs
         </h3>
         <p className="text-sm">
@@ -57,43 +57,43 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="bg-[var(--surface-2)] rounded-lg border border-[var(--border)] overflow-hidden">
+      <table className="min-w-full divide-y divide-[var(--border)]">
+        <thead className="bg-[var(--surface-3)]">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
               Title
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
               Site
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
               State
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
               Created
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
               Archived
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
               Links
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="divide-y divide-[var(--border-subtle)]">
           {runs.map((run) => (
-            <tr key={run.id} className="hover:bg-gray-50">
+            <tr key={run.id} className="hover:bg-[var(--surface-3)]/50">
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
+                <div className="text-sm font-medium text-[var(--text-primary)] max-w-xs truncate">
                   {run.title || "Untitled Run"}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-[var(--text-secondary)]">
                   {run.siteName || "Unknown"}
                 </div>
               </td>
@@ -106,10 +106,10 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
                   {run.state}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">
                 {formatDate(run.createdAt)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">
                 {run.archivedAt ? formatDate(run.archivedAt) : "-"}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -119,7 +119,7 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
                       href={run.pullRequestUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-blue-400 hover:text-blue-300"
                     >
                       PR
                     </a>
@@ -129,20 +129,20 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
                       href={run.deployPreviewUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-green-600 hover:text-green-800"
+                      className="text-green-400 hover:text-green-300"
                     >
                       Preview
                     </a>
                   )}
                   {!run.pullRequestUrl && !run.deployPreviewUrl && (
-                    <span className="text-gray-400">-</span>
+                    <span className="text-[var(--text-tertiary)]">-</span>
                   )}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                 <button
                   onClick={() => onUnarchive(run.id)}
-                  className="text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-blue-400 hover:text-blue-300 font-medium"
                 >
                   Restore
                 </button>

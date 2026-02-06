@@ -65,15 +65,15 @@ export function CreateRunModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div className="bg-[var(--surface-2)] rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-[var(--border)]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">
             Create New Run
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
           >
             <svg
               className="w-5 h-5"
@@ -93,7 +93,7 @@ export function CreateRunModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-red-900/30 text-red-300 border border-red-800/50 px-4 py-3 rounded-lg text-sm">
               {error}
             </div>
           )}
@@ -108,7 +108,7 @@ export function CreateRunModal({
           <div>
             <label
               htmlFor="branch"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
             >
               Branch (optional)
             </label>
@@ -118,14 +118,14 @@ export function CreateRunModal({
               value={branch}
               onChange={(e) => setBranch(e.target.value)}
               placeholder="e.g., feature/my-branch"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent"
             />
           </div>
 
           <div>
             <label
               htmlFor="model"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
             >
               Model (optional)
             </label>
@@ -133,7 +133,7 @@ export function CreateRunModal({
               id="model"
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent"
             >
               <option value="">Default</option>
               <option value="claude">Claude</option>
@@ -145,7 +145,7 @@ export function CreateRunModal({
           <div>
             <label
               htmlFor="prompt"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
             >
               Prompt
             </label>
@@ -155,7 +155,7 @@ export function CreateRunModal({
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Describe what you want the agent to do..."
               rows={4}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent resize-none"
             />
           </div>
 
@@ -163,14 +163,14 @@ export function CreateRunModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="px-4 py-2 text-[var(--text-secondary)] hover:bg-[var(--surface-3)] rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !siteId || !prompt.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 bg-[var(--accent-blue)] text-white rounded-lg hover:bg-[var(--accent-blue-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? "Creating..." : "Create Run"}
             </button>

@@ -82,11 +82,11 @@ export const COLUMN_CONFIG: Record<
   KanbanColumn,
   { title: string; color: string }
 > = {
-  new: { title: "New", color: "bg-blue-100 border-blue-300" },
-  running: { title: "Running", color: "bg-yellow-100 border-yellow-300" },
-  review: { title: "Review", color: "bg-purple-100 border-purple-300" },
-  pr_open: { title: "PR Open", color: "bg-green-100 border-green-300" },
-  error: { title: "Error", color: "bg-red-100 border-red-300" },
+  new: { title: "New", color: "bg-blue-900/40 border-blue-500/50" },
+  running: { title: "Running", color: "bg-yellow-900/40 border-yellow-500/50" },
+  review: { title: "Review", color: "bg-purple-900/40 border-purple-500/50" },
+  pr_open: { title: "PR Open", color: "bg-green-900/40 border-green-500/50" },
+  error: { title: "Error", color: "bg-red-900/40 border-red-500/50" },
 };
 
 export const COLUMN_ORDER: KanbanColumn[] = [

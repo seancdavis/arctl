@@ -35,7 +35,7 @@ export function AddSessionForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       {error && (
-        <div className="text-red-600 text-xs">{error}</div>
+        <div className="text-red-400 text-xs">{error}</div>
       )}
 
       <textarea
@@ -43,21 +43,21 @@ export function AddSessionForm({
         onChange={(e) => setPrompt(e.target.value)}
         placeholder="Enter follow-up prompt..."
         rows={3}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+        className="w-full bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent resize-none"
       />
 
       <div className="flex justify-end gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+          className="px-3 py-1.5 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSubmitting || !prompt.trim()}
-          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          className="px-3 py-1.5 text-sm bg-[var(--accent-blue)] text-white rounded-lg hover:bg-[var(--accent-blue-hover)] disabled:opacity-50"
         >
           {isSubmitting ? "Adding..." : "Add Session"}
         </button>

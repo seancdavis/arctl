@@ -31,7 +31,7 @@ export function SitePicker({
     <div>
       <label
         htmlFor="site"
-        className="block text-sm font-medium text-gray-700 mb-1"
+        className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
       >
         Site
       </label>
@@ -39,7 +39,7 @@ export function SitePicker({
         id="site"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent"
       >
         <option value="">Select a site...</option>
         {sortedSites.map((site) => (

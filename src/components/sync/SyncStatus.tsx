@@ -6,15 +6,15 @@ export function SyncStatus() {
   const nextSync = formatNextSync();
 
   return (
-    <div className="flex items-center gap-3 text-sm text-gray-500">
+    <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
       <div className="flex items-center gap-1.5">
-        <span className="text-gray-400">Last sync:</span>
+        <span className="text-[var(--text-tertiary)]">Last sync:</span>
         <span>{formatLastSync()}</span>
       </div>
 
       {nextSync && (
         <div className="flex items-center gap-1.5">
-          <span className="text-gray-400">Next:</span>
+          <span className="text-[var(--text-tertiary)]">Next:</span>
           <span>{nextSync}</span>
         </div>
       )}
@@ -22,7 +22,7 @@ export function SyncStatus() {
       <button
         onClick={() => refresh(true)}
         disabled={isSyncing}
-        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
+        className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-3)] rounded transition-colors disabled:opacity-50"
         title="Refresh now (resets backoff)"
       >
         <svg

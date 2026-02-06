@@ -1,3 +1,34 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --surface-0: #0c0e14;
+    --surface-1: #12151e;
+    --surface-2: #1a1d2b;
+    --surface-3: #222638;
+    --surface-4: #2a2f44;
+    --border: #2a2f44;
+    --border-subtle: #1e2235;
+    --text-primary: #e8eaf0;
+    --text-secondary: #9ba1b5;
+    --text-tertiary: #646b82;
+    --accent-blue: #5b8def;
+    --accent-blue-hover: #4a7de0;
+    --accent-green: #4ade80;
+    --accent-red: #f87171;
+  }
+
+  body {
+    background-color: var(--surface-0);
+    color: var(--text-primary);
+  }
+
+  /* Style native form controls for dark mode */
+  select,
+  input,
+  textarea {
+    color-scheme: dark;
+  }
+}

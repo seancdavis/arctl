@@ -41,14 +41,14 @@ export function KanbanCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 hover:shadow-md transition-shadow">
+    <div className="bg-[var(--surface-2)] rounded-lg border border-[var(--border)] p-3 hover:border-[var(--surface-4)] transition-colors">
       <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="font-medium text-gray-900 text-sm line-clamp-2">
+        <h3 className="font-medium text-[var(--text-primary)] text-sm line-clamp-2">
           {run.title || "Untitled Run"}
         </h3>
         <button
           onClick={() => onArchive(run.id)}
-          className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+          className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] flex-shrink-0"
           title="Archive"
         >
           <svg
@@ -67,7 +67,7 @@ export function KanbanCard({
         </button>
       </div>
 
-      <div className="text-xs text-gray-500 mb-2">
+      <div className="text-xs text-[var(--text-secondary)] mb-2">
         <div className="flex items-center gap-1 mb-1">
           <svg
             className="w-3 h-3"
@@ -104,7 +104,7 @@ export function KanbanCard({
         )}
       </div>
 
-      <div className="text-xs text-gray-400 mb-3">
+      <div className="text-xs text-[var(--text-tertiary)] mb-3">
         {formatDate(run.createdAt)}
       </div>
 
@@ -113,7 +113,7 @@ export function KanbanCard({
           href={run.pullRequestUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mb-2"
+          className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 mb-2"
         >
           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 16 16">
             <path d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z" />
@@ -127,7 +127,7 @@ export function KanbanCard({
           href={run.deployPreviewUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800 mb-2"
+          className="flex items-center gap-1 text-xs text-green-400 hover:text-green-300 mb-2"
         >
           <svg
             className="w-3 h-3"
@@ -156,7 +156,7 @@ export function KanbanCard({
         {run.state === "DONE" && !run.pullRequestUrl && (
           <button
             onClick={() => onCreatePR(run.id)}
-            className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
+            className="text-xs bg-green-900/40 text-green-400 px-2 py-1 rounded hover:bg-green-900/60"
           >
             Create PR
           </button>
@@ -165,7 +165,7 @@ export function KanbanCard({
         {(run.state === "DONE" || run.state === "ERROR") && (
           <button
             onClick={() => setShowSessionForm(!showSessionForm)}
-            className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+            className="text-xs bg-blue-900/40 text-blue-400 px-2 py-1 rounded hover:bg-blue-900/60"
           >
             + Follow-up
           </button>
@@ -173,19 +173,19 @@ export function KanbanCard({
       </div>
 
       {showSessionForm && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
+        <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
           <textarea
             value={sessionPrompt}
             onChange={(e) => setSessionPrompt(e.target.value)}
             placeholder="Enter follow-up prompt..."
-            className="w-full text-xs p-2 border border-gray-200 rounded resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full text-xs p-2 bg-[var(--surface-3)] border border-[var(--border)] rounded text-[var(--text-primary)] placeholder-[var(--text-tertiary)] resize-none focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
             rows={2}
           />
           <div className="flex gap-2 mt-2">
             <button
               onClick={handleAddSession}
               disabled={isSubmitting || !sessionPrompt.trim()}
-              className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+              className="text-xs bg-[var(--accent-blue)] text-white px-2 py-1 rounded hover:bg-[var(--accent-blue-hover)] disabled:opacity-50"
             >
               {isSubmitting ? "Adding..." : "Add"}
             </button>
@@ -194,7 +194,7 @@ export function KanbanCard({
                 setShowSessionForm(false);
                 setSessionPrompt("");
               }}
-              className="text-xs text-gray-500 hover:text-gray-700"
+              className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
             >
               Cancel
             </button>
