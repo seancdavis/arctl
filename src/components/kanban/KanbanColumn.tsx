@@ -45,7 +45,7 @@ export function KanbanColumn({
           )}
         </div>
       </div>
-      <div className="bg-[var(--surface-1)] rounded-b-lg p-2 min-h-[calc(100vh-220px)] space-y-2">
+      <div className="bg-[var(--surface-1)] rounded-b-lg p-2 space-y-2">
         {isLoading ? (
           <>
             <SkeletonCard />
