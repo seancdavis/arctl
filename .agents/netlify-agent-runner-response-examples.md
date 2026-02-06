@@ -12,6 +12,8 @@ Real response examples from Netlify's Agent Runners API. Use these to understand
 - **Timestamps** are ISO 8601 format
 - **Nullable fields** return `null`, not omitted
 - **User objects** are embedded, not IDs
+- **`mode`** is always present on sessions (defaults to `normal`)
+- **`source_session_id`** only appears on redeploy sessions
 
 ---
 
@@ -222,7 +224,7 @@ GET /api/v1/agent_runners/{RUNNER_ID}
 GET /api/v1/agent_runners/{RUNNER_ID}/sessions
 ```
 
-```json
+````json
 [
   {
     "id": "{SESSION_ID}",
@@ -269,6 +271,7 @@ GET /api/v1/agent_runners/{RUNNER_ID}/sessions
     "is_discarded": false,
     "has_result_diff": false,
     "has_cumulative_diff": false,
+    "mode": "normal",
     "dev_server_id": "{DEV_SERVER_ID}",
     "user": {
       "id": "{USER_ID}",
@@ -278,6 +281,87 @@ GET /api/v1/agent_runners/{RUNNER_ID}/sessions
     }
   }
 ]
+````
+
+---
+
+## Redeploy Session
+
+```
+POST /api/v1/agent_runners/{RUNNER_ID}/sessions/{SESSION_ID}/redeploy
+```
+
+```json
+{
+  "id": "{NEW_SESSION_ID}",
+  "agent_runner_id": "{RUNNER_ID}",
+  "created_at": "2026-01-25T10:15:22.100Z",
+  "updated_at": "2026-01-25T10:15:22.100Z",
+  "title": null,
+  "prompt": null,
+  "agent_config": {},
+  "result": null,
+  "duration": 0,
+  "steps": [],
+  "state": "new",
+  "done_at": null,
+  "result_zip_file_name": null,
+  "commit_sha": null,
+  "attached_file_keys": [],
+  "is_published": false,
+  "is_discarded": false,
+  "has_result_diff": false,
+  "has_cumulative_diff": false,
+  "mode": "redeploy",
+  "source_session_id": "{SESSION_ID}",
+  "user": {
+    "id": "{USER_ID}",
+    "full_name": "Example User",
+    "email": "user@example.com",
+    "avatar_url": "https://avatars0.githubusercontent.com/u/12345?v=4"
+  }
+}
+```
+
+---
+
+## Rebase Agent Runner
+
+```
+POST /api/v1/agent_runners/{RUNNER_ID}/rebase
+```
+
+Returns the newly created rebase session:
+
+```json
+{
+  "id": "{REBASE_SESSION_ID}",
+  "agent_runner_id": "{RUNNER_ID}",
+  "created_at": "2026-01-25T14:30:00.000Z",
+  "updated_at": "2026-01-25T14:30:00.000Z",
+  "title": null,
+  "prompt": null,
+  "agent_config": {},
+  "result": null,
+  "duration": 0,
+  "steps": [],
+  "state": "new",
+  "done_at": null,
+  "result_zip_file_name": null,
+  "commit_sha": null,
+  "attached_file_keys": [],
+  "is_published": false,
+  "is_discarded": false,
+  "has_result_diff": false,
+  "has_cumulative_diff": false,
+  "mode": "rebase",
+  "user": {
+    "id": "{USER_ID}",
+    "full_name": "Example User",
+    "email": "user@example.com",
+    "avatar_url": "https://avatars0.githubusercontent.com/u/12345?v=4"
+  }
+}
 ```
 
 ---
@@ -286,21 +370,29 @@ GET /api/v1/agent_runners/{RUNNER_ID}/sessions
 
 ### Agent Runner Fields
 
-| Field | Type | Notes |
-|-------|------|-------|
-| `state` | string | `running`, `done`, `error`, `new` (lowercase!) |
-| `pr_url` | string\|null | Full GitHub PR URL when PR exists |
-| `pr_state` | string\|null | `open`, `closed`, `merged`, `draft` |
-| `latest_session_deploy_url` | string\|null | Deploy preview URL |
-| `current_task` | string\|null | What agent is currently doing (when running) |
-| `has_result_diff` | boolean | Whether there are code changes to review |
+| Field                       | Type         | Notes                                                                  |
+| --------------------------- | ------------ | ---------------------------------------------------------------------- |
+| `state`                     | string       | `new`, `running`, `done`, `error`, `cancelled`, `archived` (lowercase) |
+| `pr_url`                    | string\|null | Full GitHub PR URL when PR exists                                      |
+| `pr_state`                  | string\|null | `open`, `closed`, `merged`, `draft`                                    |
+| `latest_session_deploy_url` | string\|null | Deploy preview URL                                                     |
+| `current_task`              | string\|null | What agent is currently doing (when running)                           |
+| `has_result_diff`           | boolean      | Whether there are code changes to review                               |
+| `active_session_created_at` | string\|null | Only present when a session is active                                  |
+| `latest_session_state`      | string\|null | State of the most recent session                                       |
 
 ### Session Fields
 
-| Field | Type | Notes |
-|-------|------|-------|
-| `agent_config.agent` | string\|null | `claude`, `gemini`, `codex` |
-| `agent_config.model` | string\|null | Specific model variant |
-| `duration` | number\|null | Milliseconds |
-| `steps` | array | Progress steps with `title` and optional `message` |
-| `result` | string\|null | Markdown summary of what was done |
+| Field                 | Type         | Notes                                                      |
+| --------------------- | ------------ | ---------------------------------------------------------- |
+| `state`               | string       | `new`, `running`, `done`, `error`, `cancelled` (lowercase) |
+| `agent_config.agent`  | string\|null | `claude`, `gemini`, `codex`                                |
+| `agent_config.model`  | string\|null | Specific model variant                                     |
+| `duration`            | number\|null | Milliseconds                                               |
+| `steps`               | array        | Progress steps with `title` and optional `message`         |
+| `result`              | string\|null | Markdown summary of what was done                          |
+| `mode`                | string       | `normal`, `redeploy`, `rebase`, `create`, `ask`            |
+| `source_session_id`   | string\|null | Only present on redeploy sessions                          |
+| `is_discarded`        | boolean      | `true` if session was discarded via revert                 |
+| `has_result_diff`     | boolean      | Whether this session produced a diff                       |
+| `has_cumulative_diff` | boolean      | Whether cumulative diff exists up to this session          |

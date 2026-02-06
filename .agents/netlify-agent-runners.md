@@ -2,8 +2,6 @@
 
 Internal API reference for interacting with Agent Runner endpoints.
 
-**See also:** `netlify-agent-runner-response-examples.md` for real response examples.
-
 ---
 
 ## Base URL
@@ -31,6 +29,7 @@ GET https://api.netlify.com/api/v1/agent_runners?site_id=YOUR_SITE_ID
 | Stop runner                 | DELETE | `/agent_runners/{id}`                                 |
 | Archive runner              | POST   | `/agent_runners/{id}/archive`                         |
 | Revert runner               | POST   | `/agent_runners/{id}/revert`                          |
+| Rebase runner               | POST   | `/agent_runners/{id}/rebase`                          |
 | Get diff                    | GET    | `/agent_runners/{id}/diff`                            |
 | Create PR                   | POST   | `/agent_runners/{id}/pull_request`                    |
 | Commit to branch            | POST   | `/agent_runners/{id}/commit`                          |
@@ -41,6 +40,7 @@ GET https://api.netlify.com/api/v1/agent_runners?site_id=YOUR_SITE_ID
 | Create session              | POST   | `/agent_runners/{id}/sessions`                        |
 | Update session              | PATCH  | `/agent_runners/{id}/sessions/{sid}`                  |
 | Stop session                | DELETE | `/agent_runners/{id}/sessions/{sid}`                  |
+| Redeploy session            | POST   | `/agent_runners/{id}/sessions/{sid}/redeploy`         |
 | Get session result diff     | GET    | `/agent_runners/{id}/sessions/{sid}/diff/result`      |
 | Get session cumulative diff | GET    | `/agent_runners/{id}/sessions/{sid}/diff/cumulative`  |
 | Get diff upload URLs        | POST   | `/agent_runners/{id}/sessions/{sid}/diff/upload_urls` |
@@ -151,6 +151,7 @@ Create a new agent runner with an initial session.
 | `branch`                 | string          | No       | Branch to build (defaults to main branch)    |
 | `agent`                  | string          | No       | Agent type identifier                        |
 | `model`                  | string          | No       | LLM model to use                             |
+| `mode`                   | string          | No       | Session mode: `normal`, `create`, or `ask`   |
 | `parent_agent_runner_id` | string          | No       | Parent agent runner ID (for branching)       |
 | `dev_server_image`       | string          | No       | Custom dev server image                      |
 | `file_keys`              | array\<string\> | No       | S3 keys of uploaded files to attach          |
@@ -257,6 +258,28 @@ Revert an agent runner to a specific session. All sessions after the specified s
 - `200 OK` - `AgentRunner` object
 - `400 Bad Request` - Cannot revert (e.g., first session or committed sessions)
 - `404 Not Found` - Session not found
+
+---
+
+### Rebase Agent Runner
+
+```
+POST /api/v1/agent_runners/{agent_runner_id}/rebase
+```
+
+Rebase an agent runner onto the current production deploy. Only available for non-git sites when the production deploy has changed since the runner was created. Creates a new rebase session that re-applies the existing diff against the updated base.
+
+**Path Parameters:**
+
+| Parameter         | Type   | Required | Description                |
+| ----------------- | ------ | -------- | -------------------------- |
+| `agent_runner_id` | string | Yes      | The ID of the agent runner |
+
+**Response:**
+
+- `200 OK` - `AgentRunnerSession` object (the newly created rebase session)
+- `400 Bad Request` - No diff to rebase, or already on latest production deploy
+- `422 Unprocessable Entity` - Site has a git repository (rebase is only for non-git sites)
 
 ---
 
@@ -508,25 +531,26 @@ Update session properties.
 
 **Request Body (JSON):**
 
-| Field                    | Type    | Required | Description                       |
-| ------------------------ | ------- | -------- | --------------------------------- |
-| `title`                  | string  | No       | Session title                     |
-| `steps`                  | array   | No       | Array of step objects             |
-| `result`                 | string  | No       | Session result text               |
-| `result_branch`          | string  | No       | Result branch name                |
-| `result_diff`            | string  | No       | Result diff content               |
-| `result_diff_binary`     | boolean | No       | Whether result diff is binary     |
-| `result_diff_s3_key`     | string  | No       | S3 key for result diff            |
-| `cumulative_diff`        | string  | No       | Cumulative diff content           |
-| `cumulative_diff_binary` | boolean | No       | Whether cumulative diff is binary |
-| `cumulative_diff_s3_key` | string  | No       | S3 key for cumulative diff        |
-| `duration`               | number  | No       | Session duration in seconds       |
-| `result_zip_file_name`   | string  | No       | Result zip filename               |
-| `deploy_id`              | string  | No       | Associated deploy ID              |
-| `state`                  | string  | No       | Session state                     |
-| `is_published`           | boolean | No       | Whether session is published      |
-| `has_netlify_form`       | boolean | No       | Whether session has Netlify form  |
-| `diff_produced`          | boolean | No       | Whether diff was produced         |
+| Field                    | Type    | Required | Description                           |
+| ------------------------ | ------- | -------- | ------------------------------------- |
+| `title`                  | string  | No       | Session title                         |
+| `steps`                  | array   | No       | Array of step objects                 |
+| `result`                 | string  | No       | Session result text                   |
+| `result_branch`          | string  | No       | Result branch name                    |
+| `result_diff`            | string  | No       | Result diff content                   |
+| `result_diff_binary`     | boolean | No       | Whether result diff is binary         |
+| `result_diff_s3_key`     | string  | No       | S3 key for result diff                |
+| `cumulative_diff`        | string  | No       | Cumulative diff content               |
+| `cumulative_diff_binary` | boolean | No       | Whether cumulative diff is binary     |
+| `cumulative_diff_s3_key` | string  | No       | S3 key for cumulative diff            |
+| `duration`               | number  | No       | Session duration in seconds           |
+| `result_zip_file_name`   | string  | No       | Result zip filename                   |
+| `deploy_id`              | string  | No       | Associated deploy ID                  |
+| `state`                  | string  | No       | Session state                         |
+| `is_published`           | boolean | No       | Whether session is published          |
+| `has_netlify_form`       | boolean | No       | Whether session has Netlify form      |
+| `has_netlify_identity`   | boolean | No       | Whether session uses Netlify Identity |
+| `diff_produced`          | boolean | No       | Whether diff was produced             |
 
 **Response:** `200 OK` - `AgentRunnerSession` object
 
@@ -548,6 +572,37 @@ Stop a running session.
 | `agent_runner_session_id` | string | Yes      | The ID of the session      |
 
 **Response:** `202 Accepted`
+
+---
+
+### Redeploy Session
+
+```
+POST /api/v1/agent_runners/{agent_runner_id}/sessions/{agent_runner_session_id}/redeploy
+```
+
+Create a redeploy session that skips AI inference and applies the existing diff from the source session. Used to rebuild a preview with updated env vars or settings.
+
+**Path Parameters:**
+
+| Parameter                 | Type   | Required | Description                              |
+| ------------------------- | ------ | -------- | ---------------------------------------- |
+| `agent_runner_id`         | string | Yes      | The ID of the agent runner               |
+| `agent_runner_session_id` | string | Yes      | The ID of the source session to redeploy |
+
+**Preconditions:**
+
+- Source session must be in `DONE` state
+- Source session must have a cumulative diff
+- Agent runner must not have an active session
+
+**Response:**
+
+- `200 OK` - `AgentRunnerSession` object (the newly created redeploy session)
+- `400 Bad Request` - Source session not completed or has no diff
+- `403 Forbidden` - Usage limit reached
+- `409 Conflict` - Agent runner already has an active session
+- `422 Unprocessable Entity` - Session has no changes to redeploy
 
 ---
 
@@ -640,7 +695,7 @@ Generate presigned S3 URLs for uploading session diffs.
   "id": "string",
   "site_id": "string",
   "parent_agent_runner_id": "string | null",
-  "state": "NEW | RUNNING | ERROR | DONE | ARCHIVED",
+  "state": "NEW | RUNNING | ERROR | DONE | CANCELLED | ARCHIVED",
   "created_at": "ISO 8601 timestamp",
   "updated_at": "ISO 8601 timestamp",
   "done_at": "ISO 8601 timestamp | null",
@@ -705,6 +760,8 @@ Generate presigned S3 URLs for uploading session diffs.
   "is_discarded": "boolean",
   "has_result_diff": "boolean",
   "has_cumulative_diff": "boolean",
+  "mode": "normal | redeploy | rebase | create | ask",
+  "source_session_id": "string | null",
   "user": "AgentRunnerUser | null"
 }
 ```
@@ -889,4 +946,37 @@ curl -X POST "$BASE_URL/agent_runners/RUNNER_ID/revert" \
   -H "Authorization: Bearer $NETLIFY_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"session_id": "session456"}'
+```
+
+### Rebasing onto Latest Production (Non-Git Sites)
+
+```bash
+# Rebase agent runner onto the current production deploy
+curl -X POST "$BASE_URL/agent_runners/RUNNER_ID/rebase" \
+  -H "Authorization: Bearer $NETLIFY_TOKEN"
+
+# Response is the newly created rebase session
+# {
+#   "id": "session789",
+#   "mode": "rebase",
+#   "state": "NEW",
+#   ...
+# }
+```
+
+### Redeploying a Session
+
+```bash
+# Redeploy a completed session (rebuilds preview without re-running AI)
+curl -X POST "$BASE_URL/agent_runners/RUNNER_ID/sessions/SESSION_ID/redeploy" \
+  -H "Authorization: Bearer $NETLIFY_TOKEN"
+
+# Response is the newly created redeploy session
+# {
+#   "id": "session_new",
+#   "mode": "redeploy",
+#   "source_session_id": "SESSION_ID",
+#   "state": "NEW",
+#   ...
+# }
 ```
