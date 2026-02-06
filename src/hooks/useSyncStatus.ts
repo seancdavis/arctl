@@ -35,15 +35,20 @@ export function useSyncStatus() {
     [setSyncState, setRuns, setArchivedRuns, setError]
   );
 
+  const parseUTC = (dateStr: string) => {
+    // Drizzle timestamp (without timezone) may omit the Z suffix
+    return new Date(dateStr.endsWith("Z") ? dateStr : dateStr + "Z");
+  };
+
   const formatLastSync = () => {
     if (!syncState?.lastSyncAt) return "Never";
-    const date = new Date(syncState.lastSyncAt);
+    const date = parseUTC(syncState.lastSyncAt);
     return date.toLocaleTimeString();
   };
 
   const formatNextSync = () => {
     if (!syncState?.nextSyncAt) return null;
-    const date = new Date(syncState.nextSyncAt);
+    const date = parseUTC(syncState.nextSyncAt);
     const now = new Date();
     const diff = date.getTime() - now.getTime();
     if (diff <= 0) return "Now";
