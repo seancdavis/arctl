@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useKanbanStore } from "./store/kanbanStore";
 import { useRuns } from "./hooks/useRuns";
 import { useSyncStatus } from "./hooks/useSyncStatus";
@@ -11,7 +12,6 @@ import { CreateRunModal } from "./components/runs/CreateRunModal";
 
 function App() {
   const {
-    view,
     isCreateModalOpen,
     closeCreateModal,
     isLoading,
@@ -59,21 +59,30 @@ function App() {
             </div>
           )}
 
-          {view === "kanban" && (
-            <KanbanBoard
-              runs={runs}
-              onArchive={archiveRun}
-              onCreatePR={createPullRequest}
-              onAddSession={addSession}
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <KanbanBoard
+                  runs={runs}
+                  onArchive={archiveRun}
+                  onCreatePR={createPullRequest}
+                  onAddSession={addSession}
+                />
+              }
             />
-          )}
-          {view === "archive" && (
-            <ArchiveView
-              runs={archivedRuns}
-              onUnarchive={unarchiveRun}
+            <Route
+              path="/archive"
+              element={
+                <ArchiveView
+                  runs={archivedRuns}
+                  onUnarchive={unarchiveRun}
+                />
+              }
             />
-          )}
-          {view === "settings" && <SettingsView />}
+            <Route path="/settings" element={<SettingsView />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </main>
 
         <CreateRunModal

@@ -6,6 +6,12 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# SPA fallback — serve index.html for client-side routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
 [dev]
   command = "npm run dev"
   targetPort = 5173

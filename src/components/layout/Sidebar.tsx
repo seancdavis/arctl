@@ -1,17 +1,15 @@
 import { useState } from "react";
-import { useKanbanStore } from "../../store/kanbanStore";
-
-type View = "kanban" | "archive" | "settings";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface NavItem {
-  view: View;
+  path: string;
   label: string;
   icon: JSX.Element;
 }
 
 const navItems: NavItem[] = [
   {
-    view: "kanban",
+    path: "/",
     label: "Board",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,7 +23,7 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    view: "archive",
+    path: "/archive",
     label: "Archive",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,7 +37,7 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    view: "settings",
+    path: "/settings",
     label: "Settings",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,7 +146,8 @@ function ToggleButton({
 
 /* ── Desktop sidebar ── */
 function DesktopSidebar() {
-  const { view, setView } = useKanbanStore();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [expanded, setExpanded] = useState(
     () => localStorage.getItem("sidebarExpanded") === "true"
   );
@@ -175,11 +174,11 @@ function DesktopSidebar() {
       <nav className={`flex flex-col gap-1 ${expanded ? "px-3" : "items-center"}`}>
         {navItems.map((item) => (
           <NavButton
-            key={item.view}
+            key={item.path}
             item={item}
-            isActive={view === item.view}
+            isActive={pathname === item.path}
             expanded={expanded}
-            onClick={() => setView(item.view)}
+            onClick={() => navigate(item.path)}
           />
         ))}
       </nav>
@@ -189,16 +188,17 @@ function DesktopSidebar() {
 
 /* ── Mobile bottom nav ── */
 function MobileBottomNav() {
-  const { view, setView } = useKanbanStore();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[var(--surface-1)] border-t border-[var(--border)] flex items-center justify-around h-14 safe-bottom">
       {navItems.map((item) => {
-        const isActive = view === item.view;
+        const isActive = pathname === item.path;
         return (
           <button
-            key={item.view}
-            onClick={() => setView(item.view)}
+            key={item.path}
+            onClick={() => navigate(item.path)}
             className={`flex flex-col items-center gap-0.5 px-4 py-1.5 transition-colors
               ${isActive ? "text-[var(--accent-blue)]" : "text-[var(--text-tertiary)]"}`}
           >
