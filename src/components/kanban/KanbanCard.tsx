@@ -23,6 +23,9 @@ export function KanbanCard({ run }: KanbanCardProps) {
       onClick={() => navigate(`/runs/${run.id}`)}
       className="bg-[var(--surface-2)] rounded-lg border border-[var(--border)] p-3 cursor-pointer hover:border-[var(--accent-blue)]/50 hover:bg-[var(--surface-2)]/80 transition-colors"
     >
+      <div className="text-xs text-[var(--accent-blue)] truncate mb-1">
+        {run.siteName || "Unknown Site"}
+      </div>
       <h3 className="font-medium text-[var(--text-primary)] text-sm line-clamp-2 mb-2">
         {run.title || "Untitled Run"}
       </h3>
