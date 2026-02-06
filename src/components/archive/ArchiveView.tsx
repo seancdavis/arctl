@@ -20,9 +20,9 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
   const getStateColor = (state: string) => {
     switch (state) {
       case "DONE":
-        return "bg-green-900/40 text-green-400";
+        return "bg-[var(--accent-green)]/10 text-[var(--accent-green)]";
       case "ERROR":
-        return "bg-red-900/40 text-red-400";
+        return "bg-[var(--accent-red)]/10 text-[var(--accent-red)]";
       case "ARCHIVED":
         return "bg-[var(--surface-4)] text-[var(--text-secondary)]";
       default:
@@ -119,7 +119,7 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
                       href={run.pullRequestUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300"
+                      className="text-[var(--accent-blue)] hover:brightness-125"
                     >
                       PR
                     </a>
@@ -129,7 +129,7 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
                       href={run.deployPreviewUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-green-400 hover:text-green-300"
+                      className="text-[var(--accent-green)] hover:brightness-125"
                     >
                       Preview
                     </a>
@@ -142,7 +142,7 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                 <button
                   onClick={() => onUnarchive(run.id)}
-                  className="text-blue-400 hover:text-blue-300 font-medium"
+                  className="text-[var(--accent-blue)] hover:brightness-125 font-medium"
                 >
                   Restore
                 </button>

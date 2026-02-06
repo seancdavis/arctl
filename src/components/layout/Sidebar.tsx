@@ -1,8 +1,17 @@
+import { useState } from "react";
 import { useKanbanStore } from "../../store/kanbanStore";
 
-const navItems = [
+type View = "kanban" | "archive" | "settings";
+
+interface NavItem {
+  view: View;
+  label: string;
+  icon: JSX.Element;
+}
+
+const navItems: NavItem[] = [
   {
-    view: "kanban" as const,
+    view: "kanban",
     label: "Board",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -16,7 +25,7 @@ const navItems = [
     ),
   },
   {
-    view: "archive" as const,
+    view: "archive",
     label: "Archive",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -30,7 +39,7 @@ const navItems = [
     ),
   },
   {
-    view: "settings" as const,
+    view: "settings",
     label: "Settings",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,31 +60,144 @@ const navItems = [
   },
 ];
 
-export function Sidebar() {
+function Tooltip({ label, visible }: { label: string; visible: boolean }) {
+  return (
+    <span
+      className={`absolute left-full ml-3 px-2.5 py-1 text-xs font-medium rounded-md whitespace-nowrap
+        bg-[var(--surface-4)] text-[var(--text-primary)] border border-[var(--border)]
+        shadow-lg shadow-black/40
+        pointer-events-none transition-all duration-150
+        ${visible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-1"}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function NavButton({
+  item,
+  isActive,
+  expanded,
+  onClick,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  expanded: boolean;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={`relative flex items-center gap-3 rounded-lg transition-colors
+        ${expanded ? "w-full px-3 h-10" : "w-10 h-10 justify-center"}
+        ${
+          isActive
+            ? "bg-[var(--surface-3)] text-[var(--accent-blue)]"
+            : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-2)]"
+        }`}
+    >
+      {isActive && (
+        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-[var(--accent-blue)] shadow-[0_0_8px_var(--accent-blue-glow)]" />
+      )}
+      {item.icon}
+      {expanded && (
+        <span className="text-sm font-medium truncate">{item.label}</span>
+      )}
+      {!expanded && <Tooltip label={item.label} visible={hovered} />}
+    </button>
+  );
+}
+
+/* Toggle chevron */
+function ToggleButton({
+  expanded,
+  onClick,
+}: {
+  expanded: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-10 h-10 flex items-center justify-center rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
+    >
+      <svg
+        className={`w-4 h-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </button>
+  );
+}
+
+/* ── Desktop sidebar ── */
+function DesktopSidebar() {
+  const { view, setView } = useKanbanStore();
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <aside
+      className={`hidden md:flex shrink-0 flex-col bg-[var(--surface-1)] border-r border-[var(--border)] transition-[width] duration-200 ease-in-out
+        ${expanded ? "w-[var(--sidebar-width-expanded)]" : "w-[var(--sidebar-width-collapsed)]"}`}
+    >
+      {/* Nav items */}
+      <nav className={`flex flex-col gap-1 pt-4 ${expanded ? "px-3" : "items-center"}`}>
+        {navItems.map((item) => (
+          <NavButton
+            key={item.view}
+            item={item}
+            isActive={view === item.view}
+            expanded={expanded}
+            onClick={() => setView(item.view)}
+          />
+        ))}
+      </nav>
+
+      {/* Expand / collapse toggle at bottom */}
+      <div className={`mt-auto pb-4 ${expanded ? "px-3" : "flex justify-center"}`}>
+        <ToggleButton expanded={expanded} onClick={() => setExpanded(!expanded)} />
+      </div>
+    </aside>
+  );
+}
+
+/* ── Mobile bottom nav ── */
+function MobileBottomNav() {
   const { view, setView } = useKanbanStore();
 
   return (
-    <aside className="w-[60px] shrink-0 bg-[var(--surface-1)] border-r border-[var(--border)] flex flex-col items-center pt-4 gap-1">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[var(--surface-1)] border-t border-[var(--border)] flex items-center justify-around h-14 safe-bottom">
       {navItems.map((item) => {
         const isActive = view === item.view;
         return (
           <button
             key={item.view}
             onClick={() => setView(item.view)}
-            title={item.label}
-            className={`relative w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
-              isActive
-                ? "bg-[var(--surface-3)] text-[var(--text-primary)]"
-                : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-2)]"
-            }`}
+            className={`flex flex-col items-center gap-0.5 px-4 py-1.5 transition-colors
+              ${isActive ? "text-[var(--accent-blue)]" : "text-[var(--text-tertiary)]"}`}
           >
-            {isActive && (
-              <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-[var(--accent-blue)]" />
-            )}
             {item.icon}
+            <span className="text-[10px] font-medium">{item.label}</span>
           </button>
         );
       })}
-    </aside>
+    </nav>
+  );
+}
+
+/* ── Public export ── */
+export function Sidebar() {
+  return (
+    <>
+      <DesktopSidebar />
+      <MobileBottomNav />
+    </>
   );
 }

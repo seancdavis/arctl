@@ -14,10 +14,14 @@
     --text-primary: #e8eaf0;
     --text-secondary: #9ba1b5;
     --text-tertiary: #646b82;
-    --accent-blue: #5b8def;
-    --accent-blue-hover: #4a7de0;
-    --accent-green: #4ade80;
-    --accent-red: #f87171;
+    --accent-blue: #00d4ff;
+    --accent-blue-hover: #00b8e6;
+    --accent-blue-glow: rgba(0, 212, 255, 0.35);
+    --accent-green: #00ff9d;
+    --accent-red: #ff3b5c;
+
+    --sidebar-width-collapsed: 60px;
+    --sidebar-width-expanded: 200px;
   }
 
   body {
@@ -31,4 +35,21 @@
   textarea {
     color-scheme: dark;
   }
+}
+
+/* Neon glow button */
+.btn-neon {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, #00b8e6 100%);
+  color: #0c0e14;
+  font-weight: 600;
+  box-shadow: 0 0 14px var(--accent-blue-glow), 0 0 4px var(--accent-blue-glow);
+  transition: box-shadow 0.2s, transform 0.15s, background 0.2s;
+}
+.btn-neon:hover {
+  box-shadow: 0 0 22px var(--accent-blue-glow), 0 0 6px var(--accent-blue-glow);
+  transform: translateY(-1px);
+}
+.btn-neon:active {
+  transform: translateY(0);
+  box-shadow: 0 0 10px var(--accent-blue-glow);
 }

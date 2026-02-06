@@ -57,7 +57,7 @@ export function AddSessionForm({
         <button
           type="submit"
           disabled={isSubmitting || !prompt.trim()}
-          className="px-3 py-1.5 text-sm bg-[var(--accent-blue)] text-white rounded-lg hover:bg-[var(--accent-blue-hover)] disabled:opacity-50"
+          className="btn-neon px-3 py-1.5 text-sm rounded-lg disabled:opacity-50"
         >
           {isSubmitting ? "Adding..." : "Add Session"}
         </button>

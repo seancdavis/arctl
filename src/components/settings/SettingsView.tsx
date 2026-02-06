@@ -51,7 +51,7 @@ export function SettingsView() {
                   onChange={(e) => toggleSiteSync(site.id, e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-[var(--surface-4)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-900/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-transparent after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--text-tertiary)] after:border-[var(--border)] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--accent-blue)] peer-checked:after:bg-white"></div>
+                <div className="w-11 h-6 bg-[var(--surface-4)] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[var(--accent-blue-glow)] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-transparent after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--text-tertiary)] after:border-[var(--border)] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--accent-blue)] peer-checked:after:bg-white peer-checked:shadow-[0_0_10px_var(--accent-blue-glow)]"></div>
               </label>
             </div>
           ))

@@ -170,7 +170,7 @@ export function CreateRunModal({
             <button
               type="submit"
               disabled={isSubmitting || !siteId || !prompt.trim()}
-              className="px-4 py-2 bg-[var(--accent-blue)] text-white rounded-lg hover:bg-[var(--accent-blue-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="btn-neon px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Creating..." : "Create Run"}
             </button>

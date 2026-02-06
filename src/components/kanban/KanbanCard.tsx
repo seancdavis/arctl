@@ -113,7 +113,7 @@ export function KanbanCard({
           href={run.pullRequestUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 mb-2"
+          className="flex items-center gap-1 text-xs text-[var(--accent-blue)] hover:brightness-125 mb-2"
         >
           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 16 16">
             <path d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z" />
@@ -127,7 +127,7 @@ export function KanbanCard({
           href={run.deployPreviewUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-green-400 hover:text-green-300 mb-2"
+          className="flex items-center gap-1 text-xs text-[var(--accent-green)] hover:brightness-125 mb-2"
         >
           <svg
             className="w-3 h-3"
@@ -156,7 +156,7 @@ export function KanbanCard({
         {run.state === "DONE" && !run.pullRequestUrl && (
           <button
             onClick={() => onCreatePR(run.id)}
-            className="text-xs bg-green-900/40 text-green-400 px-2 py-1 rounded hover:bg-green-900/60"
+            className="text-xs bg-[var(--accent-green)]/10 text-[var(--accent-green)] px-2 py-1 rounded hover:bg-[var(--accent-green)]/20"
           >
             Create PR
           </button>
@@ -165,7 +165,7 @@ export function KanbanCard({
         {(run.state === "DONE" || run.state === "ERROR") && (
           <button
             onClick={() => setShowSessionForm(!showSessionForm)}
-            className="text-xs bg-blue-900/40 text-blue-400 px-2 py-1 rounded hover:bg-blue-900/60"
+            className="text-xs bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] px-2 py-1 rounded hover:bg-[var(--accent-blue)]/20"
           >
             + Follow-up
           </button>
@@ -185,7 +185,7 @@ export function KanbanCard({
             <button
               onClick={handleAddSession}
               disabled={isSubmitting || !sessionPrompt.trim()}
-              className="text-xs bg-[var(--accent-blue)] text-white px-2 py-1 rounded hover:bg-[var(--accent-blue-hover)] disabled:opacity-50"
+              className="btn-neon text-xs px-2 py-1 rounded disabled:opacity-50"
             >
               {isSubmitting ? "Adding..." : "Add"}
             </button>
