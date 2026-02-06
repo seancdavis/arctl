@@ -1,11 +1,13 @@
 import type { Run } from "../../types/runs";
+import { Skeleton } from "../ui/Skeleton";
 
 interface ArchiveViewProps {
   runs: Run[];
+  isLoading: boolean;
   onUnarchive: (id: string) => void;
 }
 
-export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
+export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, {
@@ -30,7 +32,7 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
     }
   };
 
-  if (runs.length === 0) {
+  if (!isLoading && runs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-[var(--text-secondary)]">
         <svg
@@ -85,7 +87,19 @@ export function ArchiveView({ runs, onUnarchive }: ArchiveViewProps) {
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--border-subtle)]">
-          {runs.map((run) => (
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <tr key={i}>
+                <td className="px-6 py-4"><Skeleton className="h-4 w-40" /></td>
+                <td className="px-6 py-4"><Skeleton className="h-4 w-24" /></td>
+                <td className="px-6 py-4"><Skeleton className="h-5 w-16 rounded-full" /></td>
+                <td className="px-6 py-4"><Skeleton className="h-4 w-32" /></td>
+                <td className="px-6 py-4"><Skeleton className="h-4 w-32" /></td>
+                <td className="px-6 py-4"><Skeleton className="h-4 w-12" /></td>
+                <td className="px-6 py-4 text-right"><Skeleton className="h-4 w-14 ml-auto" /></td>
+              </tr>
+            ))
+          ) : runs.map((run) => (
             <tr key={run.id} className="hover:bg-[var(--surface-3)]/50">
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm font-medium text-[var(--text-primary)] max-w-xs truncate">

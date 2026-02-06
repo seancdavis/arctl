@@ -1,27 +1,22 @@
 import { useMemo } from "react";
+import { Outlet } from "react-router-dom";
 import type { Run, KanbanColumn as ColumnType } from "../../types/runs";
 import { COLUMN_ORDER, getKanbanColumn } from "../../types/runs";
 import { KanbanColumn } from "./KanbanColumn";
 
 interface KanbanBoardProps {
   runs: Run[];
-  onArchive: (id: string) => void;
-  onCreatePR: (id: string) => void;
-  onAddSession: (runId: string, prompt: string) => Promise<void>;
+  isLoading: boolean;
 }
 
-export function KanbanBoard({
-  runs,
-  onArchive,
-  onCreatePR,
-  onAddSession,
-}: KanbanBoardProps) {
+export function KanbanBoard({ runs, isLoading }: KanbanBoardProps) {
   const columnRuns = useMemo(() => {
     const grouped: Record<ColumnType, Run[]> = {
       new: [],
       running: [],
-      review: [],
+      done: [],
       pr_open: [],
+      pr_merged: [],
       error: [],
     };
 
@@ -46,17 +41,18 @@ export function KanbanBoard({
   }, [runs]);
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
-      {COLUMN_ORDER.map((column) => (
-        <KanbanColumn
-          key={column}
-          column={column}
-          runs={columnRuns[column]}
-          onArchive={onArchive}
-          onCreatePR={onCreatePR}
-          onAddSession={onAddSession}
-        />
-      ))}
-    </div>
+    <>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {COLUMN_ORDER.map((column) => (
+          <KanbanColumn
+            key={column}
+            column={column}
+            runs={columnRuns[column]}
+            isLoading={isLoading}
+          />
+        ))}
+      </div>
+      <Outlet />
+    </>
   );
 }

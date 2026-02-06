@@ -6,6 +6,7 @@ CREATE TABLE "runs" (
 	"state" text NOT NULL,
 	"branch" text,
 	"pull_request_url" text,
+	"pull_request_state" text,
 	"deploy_preview_url" text,
 	"created_at" timestamp NOT NULL,
 	"updated_at" timestamp NOT NULL,

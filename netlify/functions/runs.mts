@@ -93,6 +93,7 @@ export default async (req: Request, context: Context) => {
       state: (netlifyRun.state || "NEW").toUpperCase(),
       branch: branch || null,
       pullRequestUrl: netlifyRun.pr_url || null,
+      pullRequestState: netlifyRun.pr_state || null,
       deployPreviewUrl: netlifyRun.latest_session_deploy_url || null,
       createdAt: netlifyRun.created_at ? new Date(netlifyRun.created_at) : now,
       updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,

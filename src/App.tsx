@@ -9,6 +9,7 @@ import { KanbanBoard } from "./components/kanban/KanbanBoard";
 import { ArchiveView } from "./components/archive/ArchiveView";
 import { SettingsView } from "./components/settings/SettingsView";
 import { CreateRunModal } from "./components/runs/CreateRunModal";
+import { RunDetailPanel } from "./components/runs/RunDetailPanel";
 
 function App() {
   const {
@@ -35,17 +36,6 @@ function App() {
     refresh(false);
   }, [refresh]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[var(--surface-0)] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-[var(--accent-blue)] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[var(--text-secondary)]">Loading runs...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[var(--surface-0)] flex">
       <Sidebar />
@@ -63,19 +53,26 @@ function App() {
             <Route
               path="/"
               element={
-                <KanbanBoard
-                  runs={runs}
-                  onArchive={archiveRun}
-                  onCreatePR={createPullRequest}
-                  onAddSession={addSession}
-                />
+                <KanbanBoard runs={runs} isLoading={isLoading} />
               }
-            />
+            >
+              <Route
+                path="runs/:id"
+                element={
+                  <RunDetailPanel
+                    onArchive={archiveRun}
+                    onCreatePR={createPullRequest}
+                    onAddSession={addSession}
+                  />
+                }
+              />
+            </Route>
             <Route
               path="/archive"
               element={
                 <ArchiveView
                   runs={archivedRuns}
+                  isLoading={isLoading}
                   onUnarchive={unarchiveRun}
                 />
               }

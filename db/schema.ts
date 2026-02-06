@@ -14,6 +14,7 @@ export const runs = pgTable("runs", {
   state: text("state").notNull(), // NEW, RUNNING, DONE, ERROR, ARCHIVED
   branch: text("branch"),
   pullRequestUrl: text("pull_request_url"),
+  pullRequestState: text("pull_request_state"),
   deployPreviewUrl: text("deploy_preview_url"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),

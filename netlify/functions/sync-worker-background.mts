@@ -62,9 +62,10 @@ export default async (req: Request, context: Context) => {
         if (existingRun) {
           const stateChanged = existingRun.state !== (netlifyRun.state || "").toUpperCase();
           const prChanged = existingRun.pullRequestUrl !== netlifyRun.pr_url;
+          const prStateChanged = existingRun.pullRequestState !== (netlifyRun.pr_state || null);
           const previewChanged = existingRun.deployPreviewUrl !== netlifyRun.latest_session_deploy_url;
 
-          if (stateChanged || prChanged || previewChanged) {
+          if (stateChanged || prChanged || prStateChanged || previewChanged) {
             anyStateChanged = true;
             runsUpdated++;
 
@@ -75,6 +76,7 @@ export default async (req: Request, context: Context) => {
                 title: netlifyRun.title || existingRun.title,
                 branch: netlifyRun.branch || existingRun.branch,
                 pullRequestUrl: netlifyRun.pr_url || existingRun.pullRequestUrl,
+                pullRequestState: netlifyRun.pr_state || existingRun.pullRequestState,
                 deployPreviewUrl: netlifyRun.latest_session_deploy_url || existingRun.deployPreviewUrl,
                 updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,
                 syncedAt: now,
@@ -103,6 +105,7 @@ export default async (req: Request, context: Context) => {
             state: (netlifyRun.state || "NEW").toUpperCase(),
             branch: netlifyRun.branch || null,
             pullRequestUrl: netlifyRun.pr_url || null,
+            pullRequestState: netlifyRun.pr_state || null,
             deployPreviewUrl: netlifyRun.latest_session_deploy_url || null,
             createdAt: netlifyRun.created_at ? new Date(netlifyRun.created_at) : now,
             updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,

@@ -1,6 +1,6 @@
 export type RunState = "NEW" | "RUNNING" | "DONE" | "ERROR" | "ARCHIVED";
 
-export type KanbanColumn = "new" | "running" | "review" | "pr_open" | "error";
+export type KanbanColumn = "new" | "running" | "done" | "pr_open" | "pr_merged" | "error";
 
 // Matches Drizzle schema (camelCase)
 export interface Run {
@@ -11,6 +11,7 @@ export interface Run {
   state: RunState;
   branch: string | null;
   pullRequestUrl: string | null;
+  pullRequestState: string | null;
   deployPreviewUrl: string | null;
   createdAt: string;
   updatedAt: string;
@@ -68,7 +69,9 @@ export function getKanbanColumn(run: Run): KanbanColumn | null {
     case "RUNNING":
       return "running";
     case "DONE":
-      return run.pullRequestUrl ? "pr_open" : "review";
+      if (!run.pullRequestUrl) return "done";
+      if (run.pullRequestState === "merged") return "pr_merged";
+      return "pr_open";
     case "ERROR":
       return "error";
     case "ARCHIVED":
@@ -84,15 +87,17 @@ export const COLUMN_CONFIG: Record<
 > = {
   new: { title: "New", color: "bg-blue-900/40 border-blue-500/50" },
   running: { title: "Running", color: "bg-yellow-900/40 border-yellow-500/50" },
-  review: { title: "Review", color: "bg-purple-900/40 border-purple-500/50" },
+  done: { title: "Done", color: "bg-teal-900/40 border-teal-500/50" },
   pr_open: { title: "PR Open", color: "bg-green-900/40 border-green-500/50" },
+  pr_merged: { title: "PR Merged", color: "bg-purple-900/40 border-purple-500/50" },
   error: { title: "Error", color: "bg-red-900/40 border-red-500/50" },
 };
 
 export const COLUMN_ORDER: KanbanColumn[] = [
   "new",
   "running",
-  "review",
+  "done",
   "pr_open",
+  "pr_merged",
   "error",
 ];

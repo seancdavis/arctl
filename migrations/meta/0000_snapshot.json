@@ -1,5 +1,5 @@
 {
-  "id": "a9c9a394-be89-4f18-816f-0eab430830eb",
+  "id": "30827ed1-a98c-41b0-9a4c-00e5966da6d8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -46,6 +46,12 @@
         },
         "pull_request_url": {
           "name": "pull_request_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pull_request_state": {
+          "name": "pull_request_state",
           "type": "text",
           "primaryKey": false,
           "notNull": false

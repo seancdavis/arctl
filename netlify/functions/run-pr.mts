@@ -79,11 +79,12 @@ export default async (req: Request, context: Context) => {
   const result = await createRes.json();
   const now = new Date();
 
-  // Update our database with the PR URL
+  // Update our database with the PR URL and state
   await db
     .update(runs)
     .set({
       pullRequestUrl: result.pr_url || null,
+      pullRequestState: result.pr_state || "open",
       updatedAt: now,
     })
     .where(eq(runs.id, runId));

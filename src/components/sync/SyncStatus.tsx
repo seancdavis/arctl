@@ -1,7 +1,8 @@
 import { useSyncStatus } from "../../hooks/useSyncStatus";
+import { Skeleton } from "../ui/Skeleton";
 
 export function SyncStatus() {
-  const { isSyncing, refresh, formatLastSync, formatNextSync } = useSyncStatus();
+  const { syncState, isSyncing, refresh, formatLastSync, formatNextSync } = useSyncStatus();
 
   const nextSync = formatNextSync();
 
@@ -9,7 +10,11 @@ export function SyncStatus() {
     <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
       <div className="flex items-center gap-1.5">
         <span className="text-[var(--text-tertiary)]">Last sync:</span>
-        <span>{formatLastSync()}</span>
+        {syncState ? (
+          <span>{formatLastSync()}</span>
+        ) : (
+          <Skeleton className="h-4 w-16 inline-block" />
+        )}
       </div>
 
       {nextSync && (
