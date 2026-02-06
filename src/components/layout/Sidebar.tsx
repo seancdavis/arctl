@@ -112,7 +112,7 @@ function NavButton({
   );
 }
 
-/* Toggle chevron */
+/* Toggle button — hamburger when collapsed, X-close when expanded */
 function ToggleButton({
   expanded,
   onClick,
@@ -120,19 +120,28 @@ function ToggleButton({
   expanded: boolean;
   onClick: () => void;
 }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <button
       onClick={onClick}
-      className="w-10 h-10 flex items-center justify-center rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={`relative flex items-center gap-3 rounded-lg transition-colors h-10
+        text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)]
+        ${expanded ? "w-full px-3" : "w-10 justify-center"}`}
     >
-      <svg
-        className={`w-4 h-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {expanded ? (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        )}
       </svg>
+      {expanded && (
+        <span className="text-sm font-medium">Collapse</span>
+      )}
+      {!expanded && <Tooltip label="Expand menu" visible={hovered} />}
     </button>
   );
 }
@@ -140,15 +149,30 @@ function ToggleButton({
 /* ── Desktop sidebar ── */
 function DesktopSidebar() {
   const { view, setView } = useKanbanStore();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(
+    () => localStorage.getItem("sidebarExpanded") === "true"
+  );
+
+  const toggleExpanded = () => {
+    setExpanded((prev) => {
+      const next = !prev;
+      localStorage.setItem("sidebarExpanded", String(next));
+      return next;
+    });
+  };
 
   return (
     <aside
       className={`hidden md:flex shrink-0 flex-col bg-[var(--surface-1)] border-r border-[var(--border)] transition-[width] duration-200 ease-in-out
         ${expanded ? "w-[var(--sidebar-width-expanded)]" : "w-[var(--sidebar-width-collapsed)]"}`}
     >
+      {/* Expand / collapse toggle at top */}
+      <div className={`pt-3 pb-1 ${expanded ? "px-3" : "flex justify-center"}`}>
+        <ToggleButton expanded={expanded} onClick={toggleExpanded} />
+      </div>
+
       {/* Nav items */}
-      <nav className={`flex flex-col gap-1 pt-4 ${expanded ? "px-3" : "items-center"}`}>
+      <nav className={`flex flex-col gap-1 ${expanded ? "px-3" : "items-center"}`}>
         {navItems.map((item) => (
           <NavButton
             key={item.view}
@@ -159,11 +183,6 @@ function DesktopSidebar() {
           />
         ))}
       </nav>
-
-      {/* Expand / collapse toggle at bottom */}
-      <div className={`mt-auto pb-4 ${expanded ? "px-3" : "flex justify-center"}`}>
-        <ToggleButton expanded={expanded} onClick={() => setExpanded(!expanded)} />
-      </div>
     </aside>
   );
 }
