@@ -3,6 +3,7 @@ import { useKanbanStore } from "./store/kanbanStore";
 import { useRuns } from "./hooks/useRuns";
 import { useSyncStatus } from "./hooks/useSyncStatus";
 import { Header } from "./components/layout/Header";
+import { Sidebar } from "./components/layout/Sidebar";
 import { KanbanBoard } from "./components/kanban/KanbanBoard";
 import { ArchiveView } from "./components/archive/ArchiveView";
 import { SettingsView } from "./components/settings/SettingsView";
@@ -46,38 +47,41 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--surface-0)]">
-      <Header />
+    <div className="min-h-screen bg-[var(--surface-0)] flex">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header />
 
-      <main className="p-6">
-        {error && (
-          <div className="mb-4 bg-red-900/30 text-red-300 border border-red-800/50 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        )}
+        <main className="p-6 flex-1">
+          {error && (
+            <div className="mb-4 bg-red-900/30 text-red-300 border border-red-800/50 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
 
-        {view === "kanban" && (
-          <KanbanBoard
-            runs={runs}
-            onArchive={archiveRun}
-            onCreatePR={createPullRequest}
-            onAddSession={addSession}
-          />
-        )}
-        {view === "archive" && (
-          <ArchiveView
-            runs={archivedRuns}
-            onUnarchive={unarchiveRun}
-          />
-        )}
-        {view === "settings" && <SettingsView />}
-      </main>
+          {view === "kanban" && (
+            <KanbanBoard
+              runs={runs}
+              onArchive={archiveRun}
+              onCreatePR={createPullRequest}
+              onAddSession={addSession}
+            />
+          )}
+          {view === "archive" && (
+            <ArchiveView
+              runs={archivedRuns}
+              onUnarchive={unarchiveRun}
+            />
+          )}
+          {view === "settings" && <SettingsView />}
+        </main>
 
-      <CreateRunModal
-        isOpen={isCreateModalOpen}
-        onClose={closeCreateModal}
-        onCreateRun={createRun}
-      />
+        <CreateRunModal
+          isOpen={isCreateModalOpen}
+          onClose={closeCreateModal}
+          onCreateRun={createRun}
+        />
+      </div>
     </div>
   );
 }

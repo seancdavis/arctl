@@ -1,6 +1,5 @@
 import { useKanbanStore } from "../../store/kanbanStore";
 import { SyncStatus } from "../sync/SyncStatus";
-import { ViewToggle } from "./ViewToggle";
 
 export function Header() {
   const { openCreateModal } = useKanbanStore();
@@ -8,12 +7,9 @@ export function Header() {
   return (
     <header className="bg-[var(--surface-1)] border-b border-[var(--border)] px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-[var(--text-primary)]">
-            Agent Runner Kanban
-          </h1>
-          <ViewToggle />
-        </div>
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">
+          Agent Runner Kanban
+        </h1>
 
         <div className="flex items-center gap-4">
           <SyncStatus />
