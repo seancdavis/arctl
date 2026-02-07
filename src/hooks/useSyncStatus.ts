@@ -1,12 +1,16 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useKanbanStore } from "../store/kanbanStore";
 import { triggerSync } from "../api/syncApi";
 import { fetchRuns } from "../api/runsApi";
 
+const POLL_ACTIVE_MS = 15_000; // 15s when runs are active
+const POLL_IDLE_MS = 60_000; // 60s when nothing is running
+
 export function useSyncStatus() {
-  const { syncState, setSyncState, setRuns, setArchivedRuns, setError } =
+  const { runs, syncState, setSyncState, setRuns, setArchivedRuns, setError } =
     useKanbanStore();
   const [isSyncing, setIsSyncing] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const refresh = useCallback(
     async (reset = true) => {
@@ -17,7 +21,7 @@ export function useSyncStatus() {
         setSyncState(response.sync_state);
 
         // Wait a moment for background sync to process, then reload runs
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1500));
 
         // Reload runs from the database
         const [activeRuns, archived] = await Promise.all([
@@ -35,20 +39,32 @@ export function useSyncStatus() {
     [setSyncState, setRuns, setArchivedRuns, setError]
   );
 
-  const parseUTC = (dateStr: string) => {
-    // Drizzle timestamp (without timezone) may omit the Z suffix
-    return new Date(dateStr.endsWith("Z") ? dateStr : dateStr + "Z");
-  };
+  // Auto-poll: faster when runs are in progress
+  useEffect(() => {
+    const hasActiveRuns = runs.some(
+      (r) => (r.state === "NEW" || r.state === "RUNNING") && !r.archivedAt
+    );
+    const interval = hasActiveRuns ? POLL_ACTIVE_MS : POLL_IDLE_MS;
+
+    const schedule = () => {
+      timerRef.current = setTimeout(async () => {
+        await refresh(false);
+        schedule();
+      }, interval);
+    };
+
+    schedule();
+    return () => clearTimeout(timerRef.current);
+  }, [runs, refresh]);
 
   const formatLastSync = () => {
     if (!syncState?.lastSyncAt) return "Never";
-    const date = parseUTC(syncState.lastSyncAt);
-    return date.toLocaleTimeString();
+    return new Date(syncState.lastSyncAt).toLocaleTimeString();
   };
 
   const formatNextSync = () => {
     if (!syncState?.nextSyncAt) return null;
-    const date = parseUTC(syncState.nextSyncAt);
+    const date = new Date(syncState.nextSyncAt);
     const now = new Date();
     const diff = date.getTime() - now.getTime();
     if (diff <= 0) return "Now";

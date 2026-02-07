@@ -1,6 +1,6 @@
 export type RunState = "NEW" | "RUNNING" | "DONE" | "ERROR" | "ARCHIVED";
 
-export type KanbanColumn = "new" | "running" | "done" | "pr_open" | "pr_merged" | "error";
+export type KanbanColumn = "running" | "done" | "pr_open" | "pr_merged" | "error";
 
 // Matches Drizzle schema (camelCase)
 export interface Run {
@@ -65,7 +65,6 @@ export function getKanbanColumn(run: Run): KanbanColumn | null {
 
   switch (run.state) {
     case "NEW":
-      return "new";
     case "RUNNING":
       return "running";
     case "DONE":
@@ -85,7 +84,6 @@ export const COLUMN_CONFIG: Record<
   KanbanColumn,
   { title: string; color: string }
 > = {
-  new: { title: "New", color: "bg-blue-900/40 border-blue-500/50" },
   running: { title: "Running", color: "bg-yellow-900/40 border-yellow-500/50" },
   done: { title: "Done", color: "bg-teal-900/40 border-teal-500/50" },
   pr_open: { title: "PR Open", color: "bg-green-900/40 border-green-500/50" },
@@ -94,7 +92,6 @@ export const COLUMN_CONFIG: Record<
 };
 
 export const COLUMN_ORDER: KanbanColumn[] = [
-  "new",
   "running",
   "done",
   "pr_open",

@@ -12,7 +12,6 @@ interface KanbanBoardProps {
 export function KanbanBoard({ runs, isLoading }: KanbanBoardProps) {
   const columnRuns = useMemo(() => {
     const grouped: Record<ColumnType, Run[]> = {
-      new: [],
       running: [],
       done: [],
       pr_open: [],
