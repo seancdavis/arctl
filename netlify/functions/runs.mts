@@ -32,8 +32,8 @@ export default async (req: Request, context: Context) => {
 
   if (req.method === "POST") {
     const body = await req.json();
-    const { site_id, branch, prompt, model } = body;
-    console.log(`[runs] POST new run for site ${site_id} (model: ${model || 'default'})`);
+    const { site_id, branch, prompt, agent } = body;
+    console.log(`[runs] POST new run for site ${site_id} (agent: ${agent || 'default'})`);
 
     if (!site_id || !prompt) {
       return new Response(
@@ -59,7 +59,7 @@ export default async (req: Request, context: Context) => {
           Authorization: `Bearer ${pat}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ branch, prompt, model }),
+        body: JSON.stringify({ branch, prompt, agent }),
       }
     );
 

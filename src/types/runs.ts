@@ -48,7 +48,7 @@ export interface CreateRunRequest {
   site_id: string;
   branch?: string;
   prompt: string;
-  model?: string;
+  agent?: string;
 }
 
 export interface AddSessionRequest {

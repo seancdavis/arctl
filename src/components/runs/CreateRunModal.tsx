@@ -10,7 +10,7 @@ interface CreateRunModalProps {
     site_id: string;
     branch?: string;
     prompt: string;
-    model?: string;
+    agent?: string;
   }) => Promise<unknown>;
 }
 
@@ -25,7 +25,7 @@ export function CreateRunModal({
   const [siteId, setSiteId] = useState(lastUsedSiteId || "");
   const [branch, setBranch] = useState("");
   const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState("");
+  const [agent, setAgent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,13 +47,13 @@ export function CreateRunModal({
         site_id: siteId,
         branch: branch.trim() || undefined,
         prompt: prompt.trim(),
-        model: model || undefined,
+        agent: agent || undefined,
       });
       setLastUsedSiteId(siteId);
       setSiteId("");
       setBranch("");
       setPrompt("");
-      setModel("");
+      setAgent("");
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create run");
@@ -124,18 +124,17 @@ export function CreateRunModal({
 
           <div>
             <label
-              htmlFor="model"
+              htmlFor="agent"
               className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
             >
-              Model (optional)
+              Agent
             </label>
             <select
-              id="model"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
+              id="agent"
+              value={agent}
+              onChange={(e) => setAgent(e.target.value)}
               className="w-full bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent"
             >
-              <option value="">Default</option>
               <option value="claude">Claude</option>
               <option value="gemini">Gemini</option>
               <option value="codex">Codex</option>
