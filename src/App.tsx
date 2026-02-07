@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useKanbanStore } from "./store/kanbanStore";
 import { useRuns } from "./hooks/useRuns";
 import { useSyncStatus } from "./hooks/useSyncStatus";
+import { useActiveRunPolling } from "./hooks/useActiveRunPolling";
 import { Header } from "./components/layout/Header";
 import { Sidebar } from "./components/layout/Sidebar";
 import { KanbanBoard } from "./components/kanban/KanbanBoard";
@@ -30,6 +31,9 @@ function App() {
   } = useRuns();
 
   const { refresh } = useSyncStatus();
+
+  // Poll individual NEW/RUNNING runs for state changes
+  useActiveRunPolling();
 
   // Trigger sync on app load
   useEffect(() => {

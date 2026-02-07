@@ -12,6 +12,7 @@ interface KanbanBoardProps {
 export function KanbanBoard({ runs, isLoading }: KanbanBoardProps) {
   const columnRuns = useMemo(() => {
     const grouped: Record<ColumnType, Run[]> = {
+      new: [],
       running: [],
       done: [],
       pr_open: [],
@@ -19,10 +20,8 @@ export function KanbanBoard({ runs, isLoading }: KanbanBoardProps) {
       error: [],
     };
 
-    console.log('[KanbanBoard] Processing runs:', runs.length);
     for (const run of runs) {
       const column = getKanbanColumn(run);
-      console.log(`[KanbanBoard] Run ${run.id} state="${run.state}" -> column="${column}"`);
       if (column) {
         grouped[column].push(run);
       }

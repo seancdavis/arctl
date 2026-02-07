@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useKanbanStore } from "../../store/kanbanStore";
-import { fetchRun, type RunWithSessions } from "../../api/runsApi";
+import { fetchRun, syncRun, type RunWithSessions } from "../../api/runsApi";
 import type { Run, Session } from "../../types/runs";
 import { AddSessionForm } from "./AddSessionForm";
 
@@ -80,12 +80,14 @@ export function RunDetailPanel({
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const runs = useKanbanStore((s) => s.runs);
+  const updateRun = useKanbanStore((s) => s.updateRun);
 
   const [run, setRun] = useState<Run | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Find run instantly from store, or null if not loaded yet
   useEffect(() => {
@@ -108,6 +110,35 @@ export function RunDetailPanel({
       })
       .finally(() => setIsLoadingSessions(false));
   }, [id, navigate]);
+
+  // Poll when panel is open and run is in a mutable state (not pr_merged)
+  useEffect(() => {
+    if (!id || !run) return;
+    const isMerged = run.pullRequestState === "merged";
+    if (isMerged) return;
+
+    const poll = async () => {
+      try {
+        const fresh = await syncRun(id);
+        setRun(fresh);
+        setSessions(fresh.sessions || []);
+        const { sessions: _, ...runData } = fresh as any;
+        updateRun(runData);
+      } catch {
+        // Silently ignore
+      }
+    };
+
+    const schedule = () => {
+      pollTimerRef.current = setTimeout(async () => {
+        await poll();
+        schedule();
+      }, 15_000);
+    };
+
+    schedule();
+    return () => clearTimeout(pollTimerRef.current);
+  }, [id, run?.state, run?.pullRequestState]);
 
   // Slide-in animation
   useEffect(() => {

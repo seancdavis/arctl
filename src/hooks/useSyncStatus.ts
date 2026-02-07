@@ -1,16 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useKanbanStore } from "../store/kanbanStore";
 import { triggerSync } from "../api/syncApi";
 import { fetchRuns } from "../api/runsApi";
 
-const POLL_ACTIVE_MS = 15_000; // 15s when runs are active
-const POLL_IDLE_MS = 60_000; // 60s when nothing is running
-
 export function useSyncStatus() {
-  const { runs, syncState, setSyncState, setRuns, setArchivedRuns, setError } =
+  const { syncState, setSyncState, setRuns, setArchivedRuns, setError } =
     useKanbanStore();
   const [isSyncing, setIsSyncing] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const refresh = useCallback(
     async (reset = true) => {
@@ -38,24 +34,6 @@ export function useSyncStatus() {
     },
     [setSyncState, setRuns, setArchivedRuns, setError]
   );
-
-  // Auto-poll: faster when runs are in progress
-  useEffect(() => {
-    const hasActiveRuns = runs.some(
-      (r) => (r.state === "NEW" || r.state === "RUNNING") && !r.archivedAt
-    );
-    const interval = hasActiveRuns ? POLL_ACTIVE_MS : POLL_IDLE_MS;
-
-    const schedule = () => {
-      timerRef.current = setTimeout(async () => {
-        await refresh(false);
-        schedule();
-      }, interval);
-    };
-
-    schedule();
-    return () => clearTimeout(timerRef.current);
-  }, [runs, refresh]);
 
   const formatLastSync = () => {
     if (!syncState?.lastSyncAt) return "Never";

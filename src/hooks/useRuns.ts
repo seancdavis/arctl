@@ -34,8 +34,6 @@ export function useRuns() {
         fetchRuns(false),
         fetchRuns(true),
       ]);
-      console.log('[useRuns] Loaded runs:', { active: activeRuns.length, archived: archived.length });
-      console.log('[useRuns] Active runs:', activeRuns.map(r => ({ id: r.id, state: r.state })));
       setRuns(activeRuns);
       setArchivedRuns(archived);
     } catch (err) {

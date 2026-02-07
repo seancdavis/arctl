@@ -29,6 +29,14 @@ export async function fetchRun(id: string): Promise<RunWithSessions> {
   return res.json();
 }
 
+export async function syncRun(id: string): Promise<RunWithSessions> {
+  const res = await fetch(`${API_BASE}/runs/${id}?sync=true`);
+  if (!res.ok) {
+    throw new Error(`Failed to sync run: ${res.statusText}`);
+  }
+  return res.json();
+}
+
 export async function createRun(data: CreateRunRequest): Promise<Run> {
   const res = await fetch(`${API_BASE}/runs`, {
     method: "POST",
