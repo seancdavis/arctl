@@ -8,6 +8,7 @@ Agent Runner Kanban - A kanban board for managing Netlify Agent Runs across all 
 - **Backend**: Netlify Functions (serverless)
 - **Database**: Netlify DB (Neon PostgreSQL) with Drizzle ORM
 - **API**: Netlify Agent Runners API (api.netlify.com/v1)
+- **Routing**: react-router-dom (client-side routing)
 
 ## Project Structure
 
@@ -18,16 +19,23 @@ db/
 migrations/          # Drizzle migrations (auto-generated)
 netlify/functions/
   runs.mts           # GET/POST /api/runs
-  run.mts            # GET/PATCH /api/runs/:id
+  run.mts            # GET/PATCH /api/runs/:id (?sync=true for live refresh)
   run-sessions.mts   # POST /api/runs/:id/sessions
   run-pr.mts         # POST /api/runs/:id/pull-request
   sites.mts          # GET /api/sites (cached)
   sync-trigger.mts   # POST /api/sync/trigger
   sync-worker-background.mts  # Background sync worker
 src/
-  api/               # Frontend API clients
-  components/        # React components (kanban/, layout/, runs/, archive/, sync/)
-  hooks/             # useRuns, useSites, useSyncStatus
+  api/               # Frontend API clients (runsApi, sitesApi, syncApi)
+  components/
+    archive/         # ArchiveView
+    kanban/          # KanbanBoard, KanbanColumn, KanbanCard
+    layout/          # Header, Sidebar (desktop + mobile bottom nav), ViewToggle
+    runs/            # RunDetailPanel (slide-out), CreateRunModal, AddSessionForm, SitePicker
+    settings/        # SettingsView
+    sync/            # SyncStatus
+    ui/              # Shared UI primitives (Skeleton)
+  hooks/             # useRuns, useSites, useSyncStatus, useActiveRunPolling
   store/             # Zustand store (kanbanStore.ts)
   types/             # TypeScript types (runs.ts)
 ```
@@ -35,25 +43,40 @@ src/
 ## Key Implementation Details
 
 ### Database Schema (Drizzle)
-- **runs**: id, siteId, siteName, title, state, branch, pullRequestUrl, deployPreviewUrl, timestamps, customNotes
-- **sessions**: id, runId, state, prompt, timestamps
-- **sites**: id, name, updatedAt (cached from Netlify API)
-- **syncState**: backoff tracking for sync worker
+- **runs**: id, siteId, siteName, title, state, branch, pullRequestUrl, pullRequestState, deployPreviewUrl, timestamps (with timezone), customNotes, archivedAt
+- **sessions**: id, runId, state, prompt, timestamps (with timezone)
+- **sites**: id, name, updatedAt, syncEnabled
+- **syncState**: lastSyncAt, nextSyncAt, backoffSeconds, consecutiveNoChange
+
+All timestamp columns use `timestamp({ withTimezone: true })` to ensure correct local time display.
 
 ### Kanban Columns
 | Column | State | Description |
 |--------|-------|-------------|
-| New | `NEW` | Freshly created runs |
+| New | `NEW` | Freshly created / queued runs |
 | Running | `RUNNING` | Currently executing |
-| Review | `DONE` (no PR) | Completed, needs review |
-| PR Open | `DONE` (has PR) | PR created |
+| Done | `DONE` (no PR) | Completed, needs review |
+| PR Open | `DONE` (has PR, not merged) | PR created and open |
+| PR Merged | `DONE` (PR merged) | PR merged |
 | Error | `ERROR` | Failed runs |
 
-### Sync Strategy
-- Triggered on app load and manual refresh
-- Background worker syncs DB with Netlify API
-- Exponential backoff: 30s → 1m → 2m → 5m → ... → 4 days max
-- Backoff resets on state changes or manual refresh
+Column mapping logic is in `src/types/runs.ts` (`getKanbanColumn`). Archived runs are excluded from all columns.
+
+### Sync & Polling Architecture
+Three-tier approach:
+
+1. **Global sync** (backoff-based): Triggered on app load and manual refresh button. Background worker syncs all enabled sites with Netlify API. Exponential backoff: 30s → 1m → 2m → 5m → ... → 4 days max. Resets on state changes or manual refresh.
+
+2. **Per-run polling** (`useActiveRunPolling`): Polls individual NEW/RUNNING runs every 15s via `GET /api/runs/:id?sync=true`. Updates Zustand store so cards move columns in near-real-time.
+
+3. **Detail panel polling** (`RunDetailPanel`): When the slide-out panel is open and the run is in a mutable state (not merged), polls every 15s to keep panel data fresh.
+
+The `?sync=true` query param on `/api/runs/:id` fetches from Netlify API, updates the local DB, then returns fresh data.
+
+### UI Patterns
+- **Slide-out detail panel**: Clicking a kanban card navigates to `/runs/:id` and opens a right-side panel. Board stays visible (dimmed) behind backdrop. Nested route via `<Outlet />` in KanbanBoard.
+- **Sidebar**: Collapsible desktop sidebar (60px collapsed, ~200px expanded) + mobile bottom nav. Uses CSS custom properties for theming.
+- **Neon accent palette**: Cyan `#00d4ff`, green `#00ff9d`, red `#ff3b5c`. `btn-neon` CSS class for primary action buttons (gradient + glow).
 
 ### Environment Variables
 - `NETLIFY_PAT` - Netlify Personal Access Token (required)
@@ -66,21 +89,26 @@ npm run dev          # Start dev server (with Netlify functions)
 npm run build        # Build for production
 npm run db:generate  # Generate Drizzle migration
 npm run db:migrate   # Run migrations (via netlify dev:exec)
+npm run db:push      # Push schema directly to DB (bypasses migrations)
 npm run db:studio    # Open Drizzle Studio
 ```
 
-## Current Status (as of last session)
+## Current Status
 
 ### Completed
-- [x] Full kanban board UI with 5 columns
-- [x] Create runs via Netlify API
+- [x] Full kanban board UI with 6 columns (New, Running, Done, PR Open, PR Merged, Error)
+- [x] Create runs via Netlify API (defaults to Claude agent)
 - [x] Add follow-up sessions to runs
 - [x] Create PRs from completed runs
 - [x] Archive/restore runs
 - [x] Background sync with exponential backoff
+- [x] Per-run polling for active runs (NEW/RUNNING)
+- [x] Detail panel polling for mutable runs
 - [x] Manual refresh button
-- [x] Drizzle ORM integration
-- [x] Server-side logging for debugging
+- [x] Drizzle ORM integration (timezone-aware timestamps)
+- [x] Slide-out run detail panel with sessions, metadata, and actions
+- [x] Collapsible sidebar + mobile bottom nav
+- [x] Client-side routing (react-router-dom)
 
 ### Not Yet Implemented
 - [ ] Diff viewer for run changes
@@ -101,15 +129,15 @@ See `.agents/` directory for documentation:
 
 All Netlify Functions must use clean `/api` routes via the `config.path` export. Never use `/.netlify/functions/` paths.
 
-| Function | Route | Methods |
-|----------|-------|---------|
-| runs.mts | `/api/runs` | GET, POST |
-| run.mts | `/api/runs/:id` | GET, PATCH |
-| run-sessions.mts | `/api/runs/:id/sessions` | GET, POST |
-| run-pr.mts | `/api/runs/:id/pull-request` | POST |
-| sites.mts | `/api/sites` | GET |
-| sync-trigger.mts | `/api/sync/trigger` | GET, POST |
-| sync-worker-background.mts | `/api/sync/worker` | POST |
+| Function | Route | Methods | Notes |
+|----------|-------|---------|-------|
+| runs.mts | `/api/runs` | GET, POST | `?archived=true` for archived runs |
+| run.mts | `/api/runs/:id` | GET, PATCH | `?sync=true` fetches from Netlify API first |
+| run-sessions.mts | `/api/runs/:id/sessions` | GET, POST | |
+| run-pr.mts | `/api/runs/:id/pull-request` | POST | |
+| sites.mts | `/api/sites` | GET | Cached 5 min |
+| sync-trigger.mts | `/api/sync/trigger` | GET, POST | |
+| sync-worker-background.mts | `/api/sync/worker` | POST | Background function |
 
 When functions call other functions internally, use `new URL(req.url).origin` to get the base URL.
 
@@ -120,3 +148,4 @@ When functions call other functions internally, use `new URL(req.url).origin` to
 - Sync worker logs prefixed with `[sync-worker]`, trigger with `[sync-trigger]`
 - Sites are cached for 5 minutes before re-fetching from Netlify API
 - Netlify API returns lowercase state values - always normalize to UPPERCASE when storing
+- Netlify Agent Runners API uses `agent` field (claude/gemini/codex), not `model`
