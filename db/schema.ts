@@ -16,10 +16,10 @@ export const runs = pgTable("runs", {
   pullRequestUrl: text("pull_request_url"),
   pullRequestState: text("pull_request_state"),
   deployPreviewUrl: text("deploy_preview_url"),
-  createdAt: timestamp("created_at").notNull(),
-  updatedAt: timestamp("updated_at").notNull(),
-  syncedAt: timestamp("synced_at"),
-  archivedAt: timestamp("archived_at"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  syncedAt: timestamp("synced_at", { withTimezone: true }),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   customNotes: text("custom_notes"),
 });
 
@@ -30,14 +30,14 @@ export const sessions = pgTable("sessions", {
     .references(() => runs.id, { onDelete: "cascade" }),
   state: text("state").notNull(),
   prompt: text("prompt"),
-  createdAt: timestamp("created_at").notNull(),
-  updatedAt: timestamp("updated_at").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
 });
 
 export const syncState = pgTable("sync_state", {
   id: integer("id").primaryKey().default(1),
-  lastSyncAt: timestamp("last_sync_at"),
-  nextSyncAt: timestamp("next_sync_at"),
+  lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+  nextSyncAt: timestamp("next_sync_at", { withTimezone: true }),
   backoffSeconds: integer("backoff_seconds").default(30),
   consecutiveNoChange: integer("consecutive_no_change").default(0),
 });
@@ -45,7 +45,7 @@ export const syncState = pgTable("sync_state", {
 export const sites = pgTable("sites", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  updatedAt: timestamp("updated_at").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   syncEnabled: boolean("sync_enabled").default(false).notNull(),
 });
 
