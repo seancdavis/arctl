@@ -90,12 +90,14 @@ export default async (req: Request, context: Context) => {
     });
 
     // Update run state to RUNNING if it was DONE
+    const runUpdates: Partial<typeof runs.$inferInsert> = { updatedAt: now };
     if (run.state === "DONE") {
-      await db
-        .update(runs)
-        .set({ state: "RUNNING", updatedAt: now })
-        .where(eq(runs.id, runId));
+      runUpdates.state = "RUNNING";
     }
+    if (run.pullRequestUrl) {
+      runUpdates.prNeedsUpdate = true;
+    }
+    await db.update(runs).set(runUpdates).where(eq(runs.id, runId));
 
     // Trigger sync
     const siteUrl = new URL(req.url).origin;

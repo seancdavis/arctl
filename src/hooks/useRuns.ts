@@ -7,6 +7,7 @@ import {
   unarchiveRun as apiUnarchiveRun,
   addSession as apiAddSession,
   createPullRequest as apiCreatePullRequest,
+  updatePullRequest as apiUpdatePullRequest,
 } from "../api/runsApi";
 import type { CreateRunRequest } from "../types/runs";
 
@@ -88,6 +89,15 @@ export function useRuns() {
     [updateRun]
   );
 
+  const updatePullRequest = useCallback(
+    async (runId: string) => {
+      const run = await apiUpdatePullRequest(runId);
+      updateRun(run);
+      return run;
+    },
+    [updateRun]
+  );
+
   useEffect(() => {
     loadRuns();
   }, [loadRuns]);
@@ -103,5 +113,6 @@ export function useRuns() {
     unarchiveRun,
     addSession,
     createPullRequest,
+    updatePullRequest,
   };
 }

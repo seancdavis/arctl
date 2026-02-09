@@ -103,3 +103,18 @@ export async function createPullRequest(runId: string): Promise<Run> {
   }
   return res.json();
 }
+
+export async function updatePullRequest(runId: string): Promise<Run> {
+  const res = await fetch(`${API_BASE}/runs/${runId}/pull-request`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "update" }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(
+      error.error || `Failed to update PR: ${res.statusText}`
+    );
+  }
+  return res.json();
+}

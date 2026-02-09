@@ -15,11 +15,14 @@ export const runs = pgTable("runs", {
   branch: text("branch"),
   pullRequestUrl: text("pull_request_url"),
   pullRequestState: text("pull_request_state"),
+  pullRequestBranch: text("pull_request_branch"),
   deployPreviewUrl: text("deploy_preview_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   syncedAt: timestamp("synced_at", { withTimezone: true }),
   archivedAt: timestamp("archived_at", { withTimezone: true }),
+  prCommittedAt: timestamp("pr_committed_at", { withTimezone: true }),
+  prNeedsUpdate: boolean("pr_needs_update").default(false).notNull(),
   customNotes: text("custom_notes"),
 });
 

@@ -8,6 +8,7 @@ import { AddSessionForm } from "./AddSessionForm";
 interface RunDetailPanelProps {
   onArchive: (id: string) => void;
   onCreatePR: (id: string) => void;
+  onUpdatePR: (id: string) => void;
   onAddSession: (runId: string, prompt: string) => Promise<void>;
 }
 
@@ -30,17 +31,26 @@ function formatDate(dateString: string) {
 
 const PROMPT_COLLAPSE_LENGTH = 200;
 
-function SessionCard({ session }: { session: Session }) {
+function SessionCard({ session, prCommittedAt }: { session: Session; prCommittedAt: string | null }) {
   const [expanded, setExpanded] = useState(false);
   const prompt = session.prompt || "";
   const isLong = prompt.length > PROMPT_COLLAPSE_LENGTH;
 
+  const isUncommitted = prCommittedAt && new Date(session.createdAt) > new Date(prCommittedAt);
+
   return (
-    <div className="bg-[var(--surface-3)] rounded-lg px-3 py-2.5 text-sm">
+    <div className={`bg-[var(--surface-3)] rounded-lg px-3 py-2.5 text-sm ${isUncommitted ? "border border-amber-500/30" : ""}`}>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[var(--text-tertiary)] text-xs">
-          {formatDate(session.createdAt)}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[var(--text-tertiary)] text-xs">
+            {formatDate(session.createdAt)}
+          </span>
+          {isUncommitted && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">
+              Not in PR
+            </span>
+          )}
+        </div>
         <span className={`text-xs px-1.5 py-0.5 rounded ${
           session.state === "completed" || session.state === "done"
             ? "bg-teal-500/20 text-teal-300"
@@ -75,6 +85,7 @@ function SessionCard({ session }: { session: Session }) {
 export function RunDetailPanel({
   onArchive,
   onCreatePR,
+  onUpdatePR,
   onAddSession,
 }: RunDetailPanelProps) {
   const { id } = useParams<{ id: string }>();
@@ -87,6 +98,8 @@ export function RunDetailPanel({
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [prAction, setPrAction] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [prError, setPrError] = useState<string | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Find run instantly from store, or null if not loaded yet
@@ -165,9 +178,42 @@ export function RunDetailPanel({
     close();
   };
 
-  const handleCreatePR = () => {
+  const handleCreatePR = async () => {
     if (!id) return;
-    onCreatePR(id);
+    setPrAction("loading");
+    setPrError(null);
+    try {
+      await onCreatePR(id);
+      setPrAction("success");
+      // Refetch to get updated data with prCommittedAt
+      const data = await fetchRun(id);
+      setRun(data);
+      setSessions(data.sessions || []);
+      setTimeout(() => setPrAction("idle"), 2000);
+    } catch (err) {
+      setPrError(err instanceof Error ? err.message : "Failed to create PR");
+      setPrAction("error");
+      setTimeout(() => { setPrAction("idle"); setPrError(null); }, 4000);
+    }
+  };
+
+  const handleUpdatePR = async () => {
+    if (!id) return;
+    setPrAction("loading");
+    setPrError(null);
+    try {
+      await onUpdatePR(id);
+      setPrAction("success");
+      // Refetch to get updated data with prCommittedAt
+      const data = await fetchRun(id);
+      setRun(data);
+      setSessions(data.sessions || []);
+      setTimeout(() => setPrAction("idle"), 2000);
+    } catch (err) {
+      setPrError(err instanceof Error ? err.message : "Failed to update PR");
+      setPrAction("error");
+      setTimeout(() => { setPrAction("idle"); setPrError(null); }, 4000);
+    }
   };
 
   const handleAddSession = async (runId: string, prompt: string) => {
@@ -337,7 +383,7 @@ export function RunDetailPanel({
                 ) : (
                   <div className="space-y-2">
                     {sessions.map((session) => (
-                      <SessionCard key={session.id} session={session} />
+                      <SessionCard key={session.id} session={session} prCommittedAt={run.prCommittedAt} />
                     ))}
                   </div>
                 )}
@@ -368,21 +414,44 @@ export function RunDetailPanel({
 
         {/* Footer actions */}
         {run && (
-          <div className="px-5 py-4 border-t border-[var(--border)] flex gap-3">
-            {run.state === "DONE" && !run.pullRequestUrl && (
-              <button
-                onClick={handleCreatePR}
-                className="btn-neon px-4 py-2 text-sm rounded-lg"
-              >
-                Create PR
-              </button>
+          <div className="px-5 py-4 border-t border-[var(--border)] space-y-2">
+            {prAction === "error" && prError && (
+              <div className="text-xs text-[var(--accent-red)] bg-[var(--accent-red)]/10 px-3 py-1.5 rounded">
+                {prError}
+              </div>
             )}
-            <button
-              onClick={handleArchive}
-              className="px-4 py-2 text-sm rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-3)] transition-colors ml-auto"
-            >
-              Archive
-            </button>
+            <div className="flex gap-3">
+              {run.state === "DONE" && !run.pullRequestUrl && (
+                <button
+                  onClick={handleCreatePR}
+                  disabled={prAction === "loading"}
+                  className="btn-neon px-4 py-2 text-sm rounded-lg disabled:opacity-50"
+                >
+                  {prAction === "loading" ? "Creating PR..." : prAction === "success" ? "PR Created" : "Create PR"}
+                </button>
+              )}
+              {run.pullRequestUrl && (run.pullRequestState === "open" || run.pullRequestState === "draft") && (
+                <button
+                  onClick={handleUpdatePR}
+                  disabled={prAction === "loading"}
+                  className={`px-4 py-2 text-sm rounded-lg transition-colors disabled:opacity-50 ${
+                    prAction === "success"
+                      ? "border border-[var(--accent-green)]/40 text-[var(--accent-green)] bg-[var(--accent-green)]/10"
+                      : run.prNeedsUpdate
+                      ? "btn-neon"
+                      : "border border-[var(--accent-blue)]/40 text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/10"
+                  }`}
+                >
+                  {prAction === "loading" ? "Updating PR..." : prAction === "success" ? "PR Updated" : "Update PR"}
+                </button>
+              )}
+              <button
+                onClick={handleArchive}
+                className="px-4 py-2 text-sm rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-3)] transition-colors ml-auto"
+              >
+                Archive
+              </button>
+            </div>
           </div>
         )}
       </div>

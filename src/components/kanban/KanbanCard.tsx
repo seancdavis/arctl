@@ -49,8 +49,15 @@ export function KanbanCard({ run }: KanbanCardProps) {
         </div>
       )}
 
-      <div className="text-xs text-[var(--text-tertiary)]">
-        {formatDate(run.createdAt)}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-[var(--text-tertiary)]">
+          {formatDate(run.createdAt)}
+        </span>
+        {run.pullRequestUrl && run.prNeedsUpdate && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">
+            PR outdated
+          </span>
+        )}
       </div>
     </div>
   );

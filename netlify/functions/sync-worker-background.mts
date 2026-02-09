@@ -77,6 +77,7 @@ export default async (req: Request, context: Context) => {
                 branch: netlifyRun.branch || existingRun.branch,
                 pullRequestUrl: netlifyRun.pr_url || existingRun.pullRequestUrl,
                 pullRequestState: netlifyRun.pr_state || existingRun.pullRequestState,
+                pullRequestBranch: netlifyRun.pr_branch || existingRun.pullRequestBranch,
                 deployPreviewUrl: netlifyRun.latest_session_deploy_url || existingRun.deployPreviewUrl,
                 updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,
                 syncedAt: now,
@@ -106,6 +107,7 @@ export default async (req: Request, context: Context) => {
             branch: netlifyRun.branch || null,
             pullRequestUrl: netlifyRun.pr_url || null,
             pullRequestState: netlifyRun.pr_state || null,
+            pullRequestBranch: netlifyRun.pr_branch || null,
             deployPreviewUrl: netlifyRun.latest_session_deploy_url || null,
             createdAt: netlifyRun.created_at ? new Date(netlifyRun.created_at) : now,
             updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,
@@ -139,6 +141,11 @@ export default async (req: Request, context: Context) => {
                   createdAt: session.created_at ? new Date(session.created_at) : now,
                   updatedAt: session.updated_at ? new Date(session.updated_at) : now,
                 });
+                // If this run has a PR, mark it as needing update
+                const prUrl = netlifyRun.pr_url || (existingRun?.pullRequestUrl);
+                if (prUrl) {
+                  await db.update(runs).set({ prNeedsUpdate: true }).where(eq(runs.id, netlifyRun.id));
+                }
               } else if (existingSession.state !== session.state) {
                 await db
                   .update(sessions)

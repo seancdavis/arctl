@@ -12,11 +12,14 @@ export interface Run {
   branch: string | null;
   pullRequestUrl: string | null;
   pullRequestState: string | null;
+  pullRequestBranch: string | null;
   deployPreviewUrl: string | null;
   createdAt: string;
   updatedAt: string;
   syncedAt: string | null;
   archivedAt: string | null;
+  prCommittedAt: string | null;
+  prNeedsUpdate: boolean;
   customNotes: string | null;
 }
 
@@ -71,6 +74,7 @@ export function getKanbanColumn(run: Run): KanbanColumn | null {
     case "DONE":
       if (!run.pullRequestUrl) return "done";
       if (run.pullRequestState === "merged") return "pr_merged";
+      if (run.prNeedsUpdate) return "done";
       return "pr_open";
     case "ERROR":
       return "error";

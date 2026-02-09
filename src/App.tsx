@@ -28,6 +28,7 @@ function App() {
     unarchiveRun,
     addSession,
     createPullRequest,
+    updatePullRequest,
   } = useRuns();
 
   const { refresh } = useSyncStatus();
@@ -66,6 +67,7 @@ function App() {
                   <RunDetailPanel
                     onArchive={archiveRun}
                     onCreatePR={createPullRequest}
+                    onUpdatePR={updatePullRequest}
                     onAddSession={addSession}
                   />
                 }
