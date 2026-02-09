@@ -21,7 +21,8 @@ netlify/functions/
   runs.mts           # GET/POST /api/runs
   run.mts            # GET/PATCH /api/runs/:id (?sync=true for live refresh)
   run-sessions.mts   # POST /api/runs/:id/sessions
-  run-pr.mts         # POST /api/runs/:id/pull-request
+  run-pr.mts         # POST /api/runs/:id/pull-request (create + update)
+  run-pr-status.mts  # GET /api/runs/:id/pr-status (GitHub CI/review status)
   sites.mts          # GET /api/sites (cached)
   sync-trigger.mts   # POST /api/sync/trigger
   sync-worker-background.mts  # Background sync worker
@@ -43,7 +44,7 @@ src/
 ## Key Implementation Details
 
 ### Database Schema (Drizzle)
-- **runs**: id, siteId, siteName, title, state, branch, pullRequestUrl, pullRequestState, deployPreviewUrl, timestamps (with timezone), customNotes, archivedAt
+- **runs**: id, siteId, siteName, title, state, branch, pullRequestUrl, pullRequestState, pullRequestBranch, deployPreviewUrl, timestamps (with timezone), prCommittedAt, prNeedsUpdate, prCheckStatus, customNotes, archivedAt
 - **sessions**: id, runId, state, prompt, timestamps (with timezone)
 - **sites**: id, name, updatedAt, syncEnabled
 - **syncState**: lastSyncAt, nextSyncAt, backoffSeconds, consecutiveNoChange
@@ -80,6 +81,7 @@ The `?sync=true` query param on `/api/runs/:id` fetches from Netlify API, update
 
 ### Environment Variables
 - `NETLIFY_PAT` - Netlify Personal Access Token (required)
+- `GITHUB_PAT` - GitHub Personal Access Token (required for PR status checks)
 - `NETLIFY_DATABASE_URL` - Auto-provisioned by Netlify DB
 
 ## Development Commands
@@ -110,11 +112,14 @@ npm run db:studio    # Open Drizzle Studio
 - [x] Collapsible sidebar + mobile bottom nav
 - [x] Client-side routing (react-router-dom)
 
+- [x] Update PR (commit follow-up sessions to existing PR branch)
+- [x] PR commit tracking (prCommittedAt, prNeedsUpdate, session "Not in PR" badges)
+- [x] GitHub PR status integration (CI checks, review state, mergeability)
+
 ### Not Yet Implemented
 - [ ] Diff viewer for run changes
 - [ ] Filter/search runs by site or branch
 - [ ] Custom notes on runs (schema exists, UI not built)
-- [ ] GitHub integration for PR status/checks
 
 ## Netlify Primitives Reference
 
@@ -134,7 +139,8 @@ All Netlify Functions must use clean `/api` routes via the `config.path` export.
 | runs.mts | `/api/runs` | GET, POST | `?archived=true` for archived runs |
 | run.mts | `/api/runs/:id` | GET, PATCH | `?sync=true` fetches from Netlify API first |
 | run-sessions.mts | `/api/runs/:id/sessions` | GET, POST | |
-| run-pr.mts | `/api/runs/:id/pull-request` | POST | |
+| run-pr.mts | `/api/runs/:id/pull-request` | POST | `{action:"update"}` to commit to PR branch |
+| run-pr-status.mts | `/api/runs/:id/pr-status` | GET | GitHub CI checks, reviews, mergeability |
 | sites.mts | `/api/sites` | GET | Cached 5 min |
 | sync-trigger.mts | `/api/sync/trigger` | GET, POST | |
 | sync-worker-background.mts | `/api/sync/worker` | POST | Background function |

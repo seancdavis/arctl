@@ -29,6 +29,13 @@
       "when": 1770670378871,
       "tag": "0003_optimal_randall",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1770671510617,
+      "tag": "0004_nifty_living_tribunal",
+      "breakpoints": true
     }
   ]
 }

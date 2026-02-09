@@ -53,11 +53,31 @@ export function KanbanCard({ run }: KanbanCardProps) {
         <span className="text-xs text-[var(--text-tertiary)]">
           {formatDate(run.createdAt)}
         </span>
-        {run.pullRequestUrl && run.prNeedsUpdate && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">
-            PR outdated
-          </span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {run.pullRequestUrl && run.prCheckStatus && (
+            <span
+              className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                run.prCheckStatus === "success"
+                  ? "bg-green-400"
+                  : run.prCheckStatus === "failure"
+                  ? "bg-red-400"
+                  : "bg-yellow-400 animate-pulse"
+              }`}
+              title={
+                run.prCheckStatus === "success"
+                  ? "Checks passing"
+                  : run.prCheckStatus === "failure"
+                  ? "Checks failing"
+                  : "Checks running"
+              }
+            />
+          )}
+          {run.pullRequestUrl && run.prNeedsUpdate && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">
+              PR outdated
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

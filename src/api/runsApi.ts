@@ -4,6 +4,7 @@ import type {
   CreateRunRequest,
   AddSessionRequest,
   UpdateRunRequest,
+  PrStatus,
 } from "../types/runs";
 
 const API_BASE = "/api";
@@ -99,6 +100,17 @@ export async function createPullRequest(runId: string): Promise<Run> {
     const error = await res.json();
     throw new Error(
       error.error || `Failed to create PR: ${res.statusText}`
+    );
+  }
+  return res.json();
+}
+
+export async function fetchPrStatus(runId: string): Promise<PrStatus> {
+  const res = await fetch(`${API_BASE}/runs/${runId}/pr-status`);
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(
+      error.error || `Failed to fetch PR status: ${res.statusText}`
     );
   }
   return res.json();

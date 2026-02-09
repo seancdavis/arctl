@@ -20,6 +20,7 @@ export interface Run {
   archivedAt: string | null;
   prCommittedAt: string | null;
   prNeedsUpdate: boolean;
+  prCheckStatus: string | null;
   customNotes: string | null;
 }
 
@@ -61,6 +62,23 @@ export interface AddSessionRequest {
 export interface UpdateRunRequest {
   custom_notes?: string;
   archived?: boolean;
+}
+
+export interface PrCheckRun {
+  name: string;
+  status: string;
+  conclusion: string | null;
+  detailsUrl: string | null;
+}
+
+export interface PrStatus {
+  mergeable: boolean | null;
+  mergeableState: string;
+  reviewDecision: string | null;
+  overallCheckStatus: string | null;
+  checks: PrCheckRun[];
+  checksUrl: string;
+  deployPreviewUrl: string | null;
 }
 
 export function getKanbanColumn(run: Run): KanbanColumn | null {
