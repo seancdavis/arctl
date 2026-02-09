@@ -11,6 +11,7 @@ export function useSyncStatus() {
   const refresh = useCallback(
     async (reset = true) => {
       setIsSyncing(true);
+      setError(null);
       try {
         // Trigger sync on the backend
         const response = await triggerSync(reset);
