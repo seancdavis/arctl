@@ -1,6 +1,6 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
-import { runs, sessions } from "../../db/schema.ts";
+import { runs, sessions, notes } from "../../db/schema.ts";
 import { eq, asc } from "drizzle-orm";
 
 export default async (req: Request, context: Context) => {
@@ -104,14 +104,20 @@ export default async (req: Request, context: Context) => {
       .where(eq(sessions.runId, runId))
       .orderBy(asc(sessions.createdAt));
 
-    return new Response(JSON.stringify({ ...run, sessions: runSessions }), {
+    const runNotes = await db
+      .select()
+      .from(notes)
+      .where(eq(notes.runId, runId))
+      .orderBy(asc(notes.createdAt));
+
+    return new Response(JSON.stringify({ ...run, sessions: runSessions, notes: runNotes }), {
       headers: { "Content-Type": "application/json" },
     });
   }
 
   if (req.method === "PATCH") {
     const body = await req.json();
-    const { custom_notes, archived } = body;
+    const { archived } = body;
 
     const [existingRun] = await db.select().from(runs).where(eq(runs.id, runId));
     if (!existingRun) {
@@ -128,10 +134,6 @@ export default async (req: Request, context: Context) => {
       updates.archivedAt = now;
     } else if (archived === false) {
       updates.archivedAt = null;
-    }
-
-    if (custom_notes !== undefined) {
-      updates.customNotes = custom_notes;
     }
 
     await db.update(runs).set(updates).where(eq(runs.id, runId));

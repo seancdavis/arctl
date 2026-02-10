@@ -1,8 +1,10 @@
 import type {
   Run,
   Session,
+  Note,
   CreateRunRequest,
   AddSessionRequest,
+  AddNoteRequest,
   UpdateRunRequest,
   PrStatus,
 } from "../types/runs";
@@ -11,6 +13,7 @@ const API_BASE = "/api";
 
 export interface RunWithSessions extends Run {
   sessions: Session[];
+  notes: Note[];
 }
 
 export async function fetchRuns(archived = false): Promise<Run[]> {
@@ -112,6 +115,22 @@ export async function fetchPrStatus(runId: string): Promise<PrStatus> {
     throw new Error(
       error.error || `Failed to fetch PR status: ${res.statusText}`
     );
+  }
+  return res.json();
+}
+
+export async function addNote(
+  runId: string,
+  data: AddNoteRequest
+): Promise<Note> {
+  const res = await fetch(`${API_BASE}/runs/${runId}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || `Failed to add note: ${res.statusText}`);
   }
   return res.json();
 }

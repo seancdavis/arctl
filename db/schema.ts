@@ -24,7 +24,6 @@ export const runs = pgTable("runs", {
   prCommittedAt: timestamp("pr_committed_at", { withTimezone: true }),
   prNeedsUpdate: boolean("pr_needs_update").default(false).notNull(),
   prCheckStatus: text("pr_check_status"), // pending, success, failure
-  customNotes: text("custom_notes"),
 });
 
 export const sessions = pgTable("sessions", {
@@ -36,6 +35,15 @@ export const sessions = pgTable("sessions", {
   prompt: text("prompt"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+});
+
+export const notes = pgTable("notes", {
+  id: text("id").primaryKey(),
+  runId: text("run_id")
+    .notNull()
+    .references(() => runs.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
 });
 
 export const syncState = pgTable("sync_state", {
@@ -57,5 +65,7 @@ export type Run = typeof runs.$inferSelect;
 export type NewRun = typeof runs.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
+export type Note = typeof notes.$inferSelect;
+export type NewNote = typeof notes.$inferInsert;
 export type SyncState = typeof syncState.$inferSelect;
 export type Site = typeof sites.$inferSelect;

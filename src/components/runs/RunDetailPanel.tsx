@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useKanbanStore } from "../../store/kanbanStore";
 import { fetchRun, syncRun, fetchPrStatus, type RunWithSessions } from "../../api/runsApi";
-import type { Run, Session, PrStatus, PrCheckRun } from "../../types/runs";
+import type { Run, Session, Note, PrStatus, PrCheckRun } from "../../types/runs";
 import { AddSessionForm } from "./AddSessionForm";
+import { AddNoteForm } from "./AddNoteForm";
+import { NoteCard } from "./NoteCard";
 
 interface RunDetailPanelProps {
   onArchive: (id: string) => void;
@@ -343,8 +345,10 @@ export function RunDetailPanel({
 
   const [run, setRun] = useState<Run | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [runNotes, setRunNotes] = useState<Note[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [showSessionForm, setShowSessionForm] = useState(false);
+  const [showNoteForm, setShowNoteForm] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [prAction, setPrAction] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [prError, setPrError] = useState<string | null>(null);
@@ -364,6 +368,7 @@ export function RunDetailPanel({
       .then((data: RunWithSessions) => {
         setRun(data);
         setSessions(data.sessions || []);
+        setRunNotes(data.notes || []);
       })
       .catch(() => {
         // Run might not exist — navigate back
@@ -383,6 +388,7 @@ export function RunDetailPanel({
         const fresh = await syncRun(id);
         setRun(fresh);
         setSessions(fresh.sessions || []);
+        setRunNotes(fresh.notes || []);
         const { sessions: _, ...runData } = fresh as any;
         updateRun(runData);
       } catch {
@@ -437,6 +443,7 @@ export function RunDetailPanel({
       const data = await fetchRun(id);
       setRun(data);
       setSessions(data.sessions || []);
+      setRunNotes(data.notes || []);
       setTimeout(() => setPrAction("idle"), 2000);
     } catch (err) {
       setPrError(err instanceof Error ? err.message : "Failed to create PR");
@@ -456,6 +463,7 @@ export function RunDetailPanel({
       const data = await fetchRun(id);
       setRun(data);
       setSessions(data.sessions || []);
+      setRunNotes(data.notes || []);
       setTimeout(() => setPrAction("idle"), 2000);
     } catch (err) {
       setPrError(err instanceof Error ? err.message : "Failed to update PR");
@@ -471,6 +479,7 @@ export function RunDetailPanel({
       const data = await fetchRun(id);
       setRun(data);
       setSessions(data.sessions || []);
+      setRunNotes(data.notes || []);
     }
     setShowSessionForm(false);
   };
@@ -659,6 +668,38 @@ export function RunDetailPanel({
                   )}
                 </div>
               )}
+
+              {/* Notes */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
+                  Notes ({runNotes.length})
+                </h3>
+                {runNotes.length > 0 && (
+                  <div className="space-y-2">
+                    {runNotes.map((note) => (
+                      <NoteCard key={note.id} note={note} />
+                    ))}
+                  </div>
+                )}
+                {showNoteForm ? (
+                  <AddNoteForm
+                    runId={run.id}
+                    onNoteAdded={async () => {
+                      const data = await fetchRun(run.id);
+                      setRunNotes(data.notes || []);
+                      setShowNoteForm(false);
+                    }}
+                    onCancel={() => setShowNoteForm(false)}
+                  />
+                ) : (
+                  <button
+                    onClick={() => setShowNoteForm(true)}
+                    className="text-sm text-[var(--accent-blue)] hover:brightness-125"
+                  >
+                    + Add Note
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

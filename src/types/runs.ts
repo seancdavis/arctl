@@ -21,7 +21,6 @@ export interface Run {
   prCommittedAt: string | null;
   prNeedsUpdate: boolean;
   prCheckStatus: string | null;
-  customNotes: string | null;
 }
 
 export interface Session {
@@ -31,6 +30,17 @@ export interface Session {
   prompt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Note {
+  id: string;
+  runId: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface AddNoteRequest {
+  content: string;
 }
 
 export interface Site {
@@ -60,7 +70,6 @@ export interface AddSessionRequest {
 }
 
 export interface UpdateRunRequest {
-  custom_notes?: string;
   archived?: boolean;
 }
 

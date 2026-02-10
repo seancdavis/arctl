@@ -22,6 +22,7 @@ netlify/functions/
   run.mts            # GET/PATCH /api/runs/:id (?sync=true for live refresh)
   run-sessions.mts   # POST /api/runs/:id/sessions
   run-pr.mts         # POST /api/runs/:id/pull-request (create + update)
+  run-notes.mts      # GET/POST /api/runs/:id/notes
   run-pr-status.mts  # GET /api/runs/:id/pr-status (GitHub CI/review status)
   sites.mts          # GET /api/sites (cached)
   sync-trigger.mts   # POST /api/sync/trigger
@@ -44,8 +45,9 @@ src/
 ## Key Implementation Details
 
 ### Database Schema (Drizzle)
-- **runs**: id, siteId, siteName, title, state, branch, pullRequestUrl, pullRequestState, pullRequestBranch, deployPreviewUrl, timestamps (with timezone), prCommittedAt, prNeedsUpdate, prCheckStatus, customNotes, archivedAt
+- **runs**: id, siteId, siteName, title, state, branch, pullRequestUrl, pullRequestState, pullRequestBranch, deployPreviewUrl, timestamps (with timezone), prCommittedAt, prNeedsUpdate, prCheckStatus, archivedAt
 - **sessions**: id, runId, state, prompt, timestamps (with timezone)
+- **notes**: id, runId, content, createdAt (with timezone) — local timestamped notes per run
 - **sites**: id, name, updatedAt, syncEnabled
 - **syncState**: lastSyncAt, nextSyncAt, backoffSeconds, consecutiveNoChange
 
@@ -116,10 +118,11 @@ npm run db:studio    # Open Drizzle Studio
 - [x] PR commit tracking (prCommittedAt, prNeedsUpdate, session "Not in PR" badges)
 - [x] GitHub PR status integration (CI checks, review state, mergeability)
 
+- [x] Timestamped notes on runs (add/view notes in run detail panel)
+
 ### Not Yet Implemented
 - [ ] Diff viewer for run changes
 - [ ] Filter/search runs by site or branch
-- [ ] Custom notes on runs (schema exists, UI not built)
 
 ## Netlify Primitives Reference
 
@@ -139,6 +142,7 @@ All Netlify Functions must use clean `/api` routes via the `config.path` export.
 | runs.mts | `/api/runs` | GET, POST | `?archived=true` for archived runs |
 | run.mts | `/api/runs/:id` | GET, PATCH | `?sync=true` fetches from Netlify API first |
 | run-sessions.mts | `/api/runs/:id/sessions` | GET, POST | |
+| run-notes.mts | `/api/runs/:id/notes` | GET, POST | Local notes, no Netlify API |
 | run-pr.mts | `/api/runs/:id/pull-request` | POST | `{action:"update"}` to commit to PR branch |
 | run-pr-status.mts | `/api/runs/:id/pr-status` | GET | GitHub CI checks, reviews, mergeability |
 | sites.mts | `/api/sites` | GET | Cached 5 min |
