@@ -115,7 +115,7 @@ function PrStatusSection({ runId, hasPr }: { runId: string; hasPr: boolean }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checksExpanded, setChecksExpanded] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setTimeout>>();
+  const pollRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     if (!hasPr) return;
@@ -190,7 +190,7 @@ function PrStatusSection({ runId, hasPr }: { runId: string; hasPr: boolean }) {
 
   if (!prStatus) return null;
 
-  const { overallCheckStatus, reviewDecision, mergeable, mergeableState, checks, checksUrl, deployPreviewUrl } = prStatus;
+  const { overallCheckStatus, reviewDecision, mergeable, checks, checksUrl, deployPreviewUrl } = prStatus;
 
   // Overall banner
   let bannerText = "";
@@ -352,7 +352,7 @@ export function RunDetailPanel({
   const [isVisible, setIsVisible] = useState(false);
   const [prAction, setPrAction] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [prError, setPrError] = useState<string | null>(null);
-  const pollTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Find run instantly from store, or null if not loaded yet
   useEffect(() => {
