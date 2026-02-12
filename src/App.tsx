@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useKanbanStore } from "./store/kanbanStore";
 import { useRuns } from "./hooks/useRuns";
@@ -18,6 +18,7 @@ function App() {
     closeCreateModal,
     isLoading,
     error,
+    filterSiteId,
   } = useKanbanStore();
 
   const {
@@ -32,6 +33,11 @@ function App() {
   } = useRuns();
 
   const { refresh } = useSyncStatus();
+
+  const filteredRuns = useMemo(() => {
+    if (!filterSiteId) return runs;
+    return runs.filter((r) => r.siteId === filterSiteId);
+  }, [runs, filterSiteId]);
 
   // Poll individual NEW/RUNNING runs for state changes
   useActiveRunPolling();
@@ -58,7 +64,7 @@ function App() {
             <Route
               path="/"
               element={
-                <KanbanBoard runs={runs} isLoading={isLoading} />
+                <KanbanBoard runs={filteredRuns} isLoading={isLoading} />
               }
             >
               <Route

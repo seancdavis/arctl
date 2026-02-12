@@ -14,6 +14,7 @@ interface KanbanState {
   isCreateModalOpen: boolean;
   selectedRunId: string | null;
   lastUsedSiteId: string | null;
+  filterSiteId: string | null;
 
   // Actions
   setRuns: (runs: Run[]) => void;
@@ -32,6 +33,7 @@ interface KanbanState {
   closeCreateModal: () => void;
   selectRun: (runId: string | null) => void;
   setLastUsedSiteId: (siteId: string) => void;
+  setFilterSiteId: (siteId: string | null) => void;
 }
 
 export const useKanbanStore = create<KanbanState>((set) => ({
@@ -47,6 +49,7 @@ export const useKanbanStore = create<KanbanState>((set) => ({
   isCreateModalOpen: false,
   selectedRunId: null,
   lastUsedSiteId: localStorage.getItem("lastUsedSiteId"),
+  filterSiteId: localStorage.getItem("filterSiteId"),
 
   // Actions
   setRuns: (runs) => set({ runs }),
@@ -85,5 +88,13 @@ export const useKanbanStore = create<KanbanState>((set) => ({
   setLastUsedSiteId: (siteId) => {
     localStorage.setItem("lastUsedSiteId", siteId);
     set({ lastUsedSiteId: siteId });
+  },
+  setFilterSiteId: (siteId) => {
+    if (siteId) {
+      localStorage.setItem("filterSiteId", siteId);
+    } else {
+      localStorage.removeItem("filterSiteId");
+    }
+    set({ filterSiteId: siteId });
   },
 }));
