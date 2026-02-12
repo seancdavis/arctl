@@ -2,6 +2,17 @@
 
 Agent Runner Kanban - A kanban board for managing Netlify Agent Runs across all user sites.
 
+## Skills
+
+This project uses the `seancdavis-skills` plugin. When skill instructions conflict with patterns in this file, defer to the skills.
+
+Relevant skills:
+- `vite-best-practices` - Vite + React SPA conventions, Netlify Vite plugin, client-side routing
+- `data-storage` - Drizzle ORM schema, migrations, and Netlify DB patterns
+- `netlify-functions` - Serverless function syntax, config, and API route patterns
+- `ui-design` - Tailwind CSS usage, component patterns, accessibility baseline
+- `environment-variables` - Environment variable management for Netlify projects
+
 ## Tech Stack
 
 - **Frontend**: Vite + React 19 + TypeScript + Tailwind CSS + Zustand
