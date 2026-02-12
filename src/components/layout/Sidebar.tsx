@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type JSX } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 interface NavItem {

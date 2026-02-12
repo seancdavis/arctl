@@ -12,7 +12,7 @@ const POLL_INTERVAL_MS = 15_000; // 15s
 export function useActiveRunPolling() {
   const runs = useKanbanStore((s) => s.runs);
   const updateRun = useKanbanStore((s) => s.updateRun);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     const activeRunIds = runs

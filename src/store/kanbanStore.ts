@@ -9,6 +9,7 @@ interface KanbanState {
   syncState: SyncState | null;
 
   // UI State
+  view: "kanban" | "archive" | "settings";
   isLoading: boolean;
   error: string | null;
   isCreateModalOpen: boolean;
@@ -26,6 +27,7 @@ interface KanbanState {
   setSites: (sites: Site[]) => void;
   setSyncState: (state: SyncState) => void;
 
+  setView: (view: "kanban" | "archive" | "settings") => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   openCreateModal: () => void;
@@ -42,6 +44,7 @@ export const useKanbanStore = create<KanbanState>((set) => ({
   syncState: null,
 
   // Initial UI State
+  view: "kanban",
   isLoading: true,
   error: null,
   isCreateModalOpen: false,
@@ -77,6 +80,7 @@ export const useKanbanStore = create<KanbanState>((set) => ({
   setSites: (sites) => set({ sites }),
   setSyncState: (syncState) => set({ syncState }),
 
+  setView: (view) => set({ view }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
   openCreateModal: () => set({ isCreateModalOpen: true }),
