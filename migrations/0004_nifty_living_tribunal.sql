@@ -1,1 +1,0 @@
-ALTER TABLE "runs" ADD COLUMN "pr_check_status" text;

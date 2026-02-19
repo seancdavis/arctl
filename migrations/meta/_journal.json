@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1770412847608,
-      "tag": "0000_graceful_mulholland_black",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1770466369716,
-      "tag": "0001_overconfident_misty_knight",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1770669722484,
-      "tag": "0002_fine_wind_dancer",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1770670378871,
-      "tag": "0003_optimal_randall",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1770671510617,
-      "tag": "0004_nifty_living_tribunal",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1770721803235,
-      "tag": "0005_nasty_inertia",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1771499023669,
-      "tag": "0006_deep_mercury",
+      "when": 1771522220189,
+      "tag": "20260219173020_ordinary_morlun",
       "breakpoints": true
     }
   ]

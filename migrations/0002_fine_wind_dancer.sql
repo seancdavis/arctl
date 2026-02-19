@@ -1,1 +1,0 @@
-ALTER TABLE "runs" ADD COLUMN "pull_request_branch" text;
