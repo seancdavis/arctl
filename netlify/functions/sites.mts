@@ -6,10 +6,7 @@ import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
   if (req.method !== "GET") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ error: "Method not allowed" }, { status: 405 });
   }
 
   let auth;
@@ -30,9 +27,7 @@ export default async (req: Request, context: Context) => {
 
   if (hasFreshCache) {
     console.log(`[sites] Returning ${cachedSites.length} cached sites`);
-    return new Response(JSON.stringify(cachedSites), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json(cachedSites);
   }
 
   console.log("[sites] Cache stale, fetching from Netlify API");
@@ -46,14 +41,9 @@ export default async (req: Request, context: Context) => {
   if (!sitesRes.ok) {
     // If API fails but we have cached data, return that
     if (cachedSites.length > 0) {
-      return new Response(JSON.stringify(cachedSites), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json(cachedSites);
     }
-    return new Response(JSON.stringify({ error: "Failed to fetch sites" }), {
-      status: 502,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ error: "Failed to fetch sites" }, { status: 502 });
   }
 
   const netlifySites = await sitesRes.json();
@@ -77,9 +67,7 @@ export default async (req: Request, context: Context) => {
   const result = await db.select().from(sites).orderBy(desc(sites.updatedAt));
   console.log(`[sites] Fetched and cached ${result.length} sites`);
 
-  return new Response(JSON.stringify(result), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return Response.json(result);
 };
 
 export const config: Config = {

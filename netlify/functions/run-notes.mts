@@ -12,16 +12,10 @@ export default async (req: Request, context: Context) => {
     return handleAuthError(err);
   }
 
-  const url = new URL(req.url);
-  // Path: /api/runs/:id/notes
-  const pathParts = url.pathname.split("/");
-  const runId = pathParts[pathParts.length - 2];
+  const { id: runId } = context.params;
 
   if (!runId) {
-    return new Response(JSON.stringify({ error: "Run ID required" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ error: "Run ID required" }, { status: 400 });
   }
 
   if (req.method === "GET") {
@@ -31,9 +25,7 @@ export default async (req: Request, context: Context) => {
       .where(eq(notes.runId, runId))
       .orderBy(asc(notes.createdAt));
 
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json(result);
   }
 
   if (req.method === "POST") {
@@ -41,18 +33,12 @@ export default async (req: Request, context: Context) => {
     const { content } = body;
 
     if (!content || !content.trim()) {
-      return new Response(JSON.stringify({ error: "content is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "content is required" }, { status: 400 });
     }
 
     const [run] = await db.select().from(runs).where(eq(runs.id, runId));
     if (!run) {
-      return new Response(JSON.stringify({ error: "Run not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Run not found" }, { status: 404 });
     }
 
     const id = crypto.randomUUID();
@@ -68,16 +54,10 @@ export default async (req: Request, context: Context) => {
 
     const [note] = await db.select().from(notes).where(eq(notes.id, id));
 
-    return new Response(JSON.stringify(note), {
-      status: 201,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json(note, { status: 201 });
   }
 
-  return new Response(JSON.stringify({ error: "Method not allowed" }), {
-    status: 405,
-    headers: { "Content-Type": "application/json" },
-  });
+  return Response.json({ error: "Method not allowed" }, { status: 405 });
 };
 
 export const config: Config = {

@@ -42,15 +42,9 @@ function computeOverallCheckStatus(checkRuns: any[]): string | null {
   return "success";
 }
 
-const json = (data: any, status = 200) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-
 export default async (req: Request, context: Context) => {
   if (req.method !== "GET") {
-    return json({ error: "Method not allowed" }, 405);
+    return Response.json({ error: "Method not allowed" }, { status: 405 });
   }
 
   try {
@@ -59,32 +53,29 @@ export default async (req: Request, context: Context) => {
     return handleAuthError(err);
   }
 
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split("/");
-  // Path: /api/runs/:id/pr-status
-  const runId = pathParts[pathParts.length - 2];
+  const { id: runId } = context.params;
 
   if (!runId) {
-    return json({ error: "Run ID required" }, 400);
+    return Response.json({ error: "Run ID required" }, { status: 400 });
   }
 
   const [run] = await db.select().from(runs).where(eq(runs.id, runId));
   if (!run) {
-    return json({ error: "Run not found" }, 404);
+    return Response.json({ error: "Run not found" }, { status: 404 });
   }
 
   if (!run.pullRequestUrl) {
-    return json({ error: "Run has no pull request" }, 400);
+    return Response.json({ error: "Run has no pull request" }, { status: 400 });
   }
 
   const githubPat = Netlify.env.get("GITHUB_PAT");
   if (!githubPat) {
-    return json({ error: "GITHUB_PAT not configured" }, 500);
+    return Response.json({ error: "GITHUB_PAT not configured" }, { status: 500 });
   }
 
   const parsed = parsePrUrl(run.pullRequestUrl);
   if (!parsed) {
-    return json({ error: "Could not parse PR URL" }, 400);
+    return Response.json({ error: "Could not parse PR URL" }, { status: 400 });
   }
 
   const { owner, repo, number } = parsed;
@@ -101,7 +92,7 @@ export default async (req: Request, context: Context) => {
 
   if (!prRes.ok) {
     const error = await prRes.text();
-    return json({ error: `GitHub API error: ${error}` }, prRes.status);
+    return Response.json({ error: `GitHub API error: ${error}` }, { status: prRes.status });
   }
 
   const pr = await prRes.json();
@@ -176,7 +167,7 @@ export default async (req: Request, context: Context) => {
 
   const checksUrl = `https://github.com/${owner}/${repo}/pull/${number}/checks`;
 
-  return json({
+  return Response.json({
     mergeable: pr.mergeable,
     mergeableState: pr.mergeable_state || "unknown",
     reviewDecision,

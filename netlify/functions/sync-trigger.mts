@@ -8,10 +8,7 @@ export default async (req: Request, context: Context) => {
   console.log("[sync-trigger] Received request", { method: req.method });
 
   if (req.method !== "POST" && req.method !== "GET") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ error: "Method not allowed" }, { status: 405 });
   }
 
   let auth;
@@ -77,13 +74,10 @@ export default async (req: Request, context: Context) => {
   const [state] = await db.select().from(syncState).where(eq(syncState.id, 1));
   console.log("[sync-trigger] Current sync state:", state);
 
-  return new Response(
-    JSON.stringify({
-      message: "Sync triggered",
-      sync_state: state,
-    }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+  return Response.json({
+    message: "Sync triggered",
+    sync_state: state,
+  });
 };
 
 export const config: Config = {

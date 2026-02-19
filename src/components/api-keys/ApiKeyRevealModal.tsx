@@ -15,13 +15,13 @@ export function ApiKeyRevealModal({ rawKey, onClose }: ApiKeyRevealModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="api-key-reveal-title">
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
       <div className="relative bg-[var(--surface-1)] border border-[var(--border)] rounded-xl shadow-2xl max-w-lg w-full p-6">
-        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">
+        <h3 id="api-key-reveal-title" className="text-lg font-bold text-[var(--text-primary)] mb-2">
           API Key Created
         </h3>
         <p className="text-sm text-[var(--accent-red)] mb-4">

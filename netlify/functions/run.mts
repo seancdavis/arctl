@@ -12,18 +12,14 @@ export default async (req: Request, context: Context) => {
     return handleAuthError(err);
   }
 
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split("/");
-  const runId = pathParts[pathParts.length - 1];
+  const { id: runId } = context.params;
 
   if (!runId) {
-    return new Response(JSON.stringify({ error: "Run ID required" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ error: "Run ID required" }, { status: 400 });
   }
 
   if (req.method === "GET") {
+    const url = new URL(req.url);
     const shouldSync = url.searchParams.get("sync") === "true";
 
     // If sync=true, fetch fresh data from Netlify API and update DB first
@@ -73,7 +69,6 @@ export default async (req: Request, context: Context) => {
                   createdAt: session.created_at ? new Date(session.created_at) : now,
                   updatedAt: session.updated_at ? new Date(session.updated_at) : now,
                 });
-                // If run has a PR, mark it as needing update
                 if (netlifyRun.pr_url || existingRun?.pullRequestUrl) {
                   await db.update(runs).set({ prNeedsUpdate: true }).where(eq(runs.id, runId));
                 }
@@ -97,10 +92,7 @@ export default async (req: Request, context: Context) => {
     const [run] = await db.select().from(runs).where(eq(runs.id, runId));
 
     if (!run) {
-      return new Response(JSON.stringify({ error: "Run not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Run not found" }, { status: 404 });
     }
 
     const runSessions = await db
@@ -115,9 +107,7 @@ export default async (req: Request, context: Context) => {
       .where(eq(notes.runId, runId))
       .orderBy(asc(notes.createdAt));
 
-    return new Response(JSON.stringify({ ...run, sessions: runSessions, notes: runNotes }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ ...run, sessions: runSessions, notes: runNotes });
   }
 
   if (req.method === "PATCH") {
@@ -126,10 +116,7 @@ export default async (req: Request, context: Context) => {
 
     const [existingRun] = await db.select().from(runs).where(eq(runs.id, runId));
     if (!existingRun) {
-      return new Response(JSON.stringify({ error: "Run not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Run not found" }, { status: 404 });
     }
 
     const now = new Date();
@@ -144,15 +131,10 @@ export default async (req: Request, context: Context) => {
     await db.update(runs).set(updates).where(eq(runs.id, runId));
 
     const [run] = await db.select().from(runs).where(eq(runs.id, runId));
-    return new Response(JSON.stringify(run), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json(run);
   }
 
-  return new Response(JSON.stringify({ error: "Method not allowed" }), {
-    status: 405,
-    headers: { "Content-Type": "application/json" },
-  });
+  return Response.json({ error: "Method not allowed" }, { status: 405 });
 };
 
 export const config: Config = {

@@ -95,11 +95,9 @@ export default async (request: Request, context: Context) => {
 
   // DELETE /api/keys/:id — revoke a key
   if (request.method === "DELETE") {
-    const url = new URL(request.url);
-    const pathParts = url.pathname.split("/");
-    const keyId = pathParts[pathParts.length - 1];
+    const { id: keyId } = context.params;
 
-    if (!keyId || keyId === "keys") {
+    if (!keyId) {
       return Response.json({ error: "Key ID required" }, { status: 400 });
     }
 
@@ -122,7 +120,7 @@ export default async (request: Request, context: Context) => {
     return Response.json({ success: true });
   }
 
-  return new Response("Method not allowed", { status: 405 });
+  return Response.json({ error: "Method not allowed" }, { status: 405 });
 };
 
 export const config: Config = {

@@ -34,7 +34,9 @@ function UserMenu() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-[var(--surface-2)]"
+        aria-label="User menu"
+        aria-expanded={open}
+        className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-[var(--surface-2)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-cyan)]"
       >
         {user.avatarUrl ? (
           <img
@@ -95,7 +97,7 @@ export function Header() {
           </div>
           <button
             onClick={openCreateModal}
-            className="btn-neon px-3 md:px-4 py-2 rounded-lg flex items-center gap-2 text-sm"
+            className="btn-neon px-3 md:px-4 py-2 rounded-lg flex items-center gap-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-cyan)]"
           >
             <svg
               className="w-5 h-5"

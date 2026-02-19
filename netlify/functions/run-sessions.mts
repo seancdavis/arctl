@@ -12,16 +12,10 @@ export default async (req: Request, context: Context) => {
     return handleAuthError(err);
   }
 
-  const url = new URL(req.url);
-  // Path: /api/runs/:id/sessions
-  const pathParts = url.pathname.split("/");
-  const runId = pathParts[pathParts.length - 2];
+  const { id: runId } = context.params;
 
   if (!runId) {
-    return new Response(JSON.stringify({ error: "Run ID required" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ error: "Run ID required" }, { status: 400 });
   }
 
   if (req.method === "GET") {
@@ -31,9 +25,7 @@ export default async (req: Request, context: Context) => {
       .where(eq(sessions.runId, runId))
       .orderBy(asc(sessions.createdAt));
 
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json(result);
   }
 
   if (req.method === "POST") {
@@ -41,18 +33,12 @@ export default async (req: Request, context: Context) => {
     const { prompt } = body;
 
     if (!prompt) {
-      return new Response(JSON.stringify({ error: "prompt is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "prompt is required" }, { status: 400 });
     }
 
     const [run] = await db.select().from(runs).where(eq(runs.id, runId));
     if (!run) {
-      return new Response(JSON.stringify({ error: "Run not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Run not found" }, { status: 404 });
     }
 
     // Create session via Netlify API
@@ -70,16 +56,15 @@ export default async (req: Request, context: Context) => {
 
     if (!createRes.ok) {
       const error = await createRes.text();
-      return new Response(
-        JSON.stringify({ error: `Failed to create session: ${error}` }),
-        { status: createRes.status, headers: { "Content-Type": "application/json" } }
+      return Response.json(
+        { error: `Failed to create session: ${error}` },
+        { status: createRes.status }
       );
     }
 
     const netlifySession = await createRes.json();
     const now = new Date();
 
-    // Insert into our database
     await db.insert(sessions).values({
       id: netlifySession.id,
       runId: runId,
@@ -116,16 +101,10 @@ export default async (req: Request, context: Context) => {
       .from(sessions)
       .where(eq(sessions.id, netlifySession.id));
 
-    return new Response(JSON.stringify(session), {
-      status: 201,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json(session, { status: 201 });
   }
 
-  return new Response(JSON.stringify({ error: "Method not allowed" }), {
-    status: 405,
-    headers: { "Content-Type": "application/json" },
-  });
+  return Response.json({ error: "Method not allowed" }, { status: 405 });
 };
 
 export const config: Config = {
