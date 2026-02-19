@@ -1,7 +1,7 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { runs } from "../../db/schema.ts";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
@@ -22,7 +22,7 @@ export default async (req: Request, context: Context) => {
     return Response.json({ error: "Run ID required" }, { status: 400 });
   }
 
-  const [run] = await db.select().from(runs).where(eq(runs.id, runId));
+  const [run] = await db.select().from(runs).where(and(eq(runs.id, runId), eq(runs.userId, auth.userId)));
   if (!run) {
     return Response.json({ error: "Run not found" }, { status: 404 });
   }

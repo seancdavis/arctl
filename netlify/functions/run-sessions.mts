@@ -1,7 +1,7 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { runs, sessions } from "../../db/schema.ts";
-import { eq, asc } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
@@ -16,6 +16,12 @@ export default async (req: Request, context: Context) => {
 
   if (!runId) {
     return Response.json({ error: "Run ID required" }, { status: 400 });
+  }
+
+  // Verify run exists and belongs to user
+  const [run] = await db.select().from(runs).where(and(eq(runs.id, runId), eq(runs.userId, auth.userId)));
+  if (!run) {
+    return Response.json({ error: "Run not found" }, { status: 404 });
   }
 
   if (req.method === "GET") {
@@ -34,11 +40,6 @@ export default async (req: Request, context: Context) => {
 
     if (!prompt) {
       return Response.json({ error: "prompt is required" }, { status: 400 });
-    }
-
-    const [run] = await db.select().from(runs).where(eq(runs.id, runId));
-    if (!run) {
-      return Response.json({ error: "Run not found" }, { status: 404 });
     }
 
     // Create session via Netlify API

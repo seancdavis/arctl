@@ -1,7 +1,7 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { runs } from "../../db/schema.ts";
-import { eq, isNull, isNotNull, desc } from "drizzle-orm";
+import { eq, and, isNull, isNotNull, desc } from "drizzle-orm";
 import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
@@ -23,12 +23,12 @@ export default async (req: Request, context: Context) => {
       ? await db
           .select()
           .from(runs)
-          .where(isNotNull(runs.archivedAt))
+          .where(and(eq(runs.userId, auth.userId), isNotNull(runs.archivedAt)))
           .orderBy(desc(runs.archivedAt))
       : await db
           .select()
           .from(runs)
-          .where(isNull(runs.archivedAt))
+          .where(and(eq(runs.userId, auth.userId), isNull(runs.archivedAt)))
           .orderBy(desc(runs.createdAt));
 
     console.log(`[runs] GET returning ${result.length} runs`);

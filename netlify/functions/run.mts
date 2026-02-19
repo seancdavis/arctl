@@ -1,7 +1,7 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { runs, sessions, notes } from "../../db/schema.ts";
-import { eq, asc } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
@@ -33,7 +33,7 @@ export default async (req: Request, context: Context) => {
           const netlifyRun = await apiRes.json();
           const now = new Date();
 
-          const [existingRun] = await db.select().from(runs).where(eq(runs.id, runId));
+          const [existingRun] = await db.select().from(runs).where(and(eq(runs.id, runId), eq(runs.userId, auth.userId)));
           if (existingRun) {
             await db
               .update(runs)
@@ -89,7 +89,7 @@ export default async (req: Request, context: Context) => {
       }
     }
 
-    const [run] = await db.select().from(runs).where(eq(runs.id, runId));
+    const [run] = await db.select().from(runs).where(and(eq(runs.id, runId), eq(runs.userId, auth.userId)));
 
     if (!run) {
       return Response.json({ error: "Run not found" }, { status: 404 });
@@ -114,7 +114,7 @@ export default async (req: Request, context: Context) => {
     const body = await req.json();
     const { archived } = body;
 
-    const [existingRun] = await db.select().from(runs).where(eq(runs.id, runId));
+    const [existingRun] = await db.select().from(runs).where(and(eq(runs.id, runId), eq(runs.userId, auth.userId)));
     if (!existingRun) {
       return Response.json({ error: "Run not found" }, { status: 404 });
     }

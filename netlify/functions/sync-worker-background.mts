@@ -1,6 +1,6 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
-import { runs, sessions, sites, syncState } from "../../db/schema.ts";
+import { runs, sessions, sites, users, syncState } from "../../db/schema.ts";
 import { eq, isNull } from "drizzle-orm";
 
 // Backoff schedule in seconds
@@ -33,6 +33,15 @@ export default async (req: Request, context: Context) => {
     console.error("[sync-worker] No access token available");
     return;
   }
+
+  // Look up the user who owns this access token so we can attribute runs
+  const [tokenOwner] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.accessToken, accessToken))
+    .limit(1);
+  const syncUserId = tokenOwner?.id || null;
+  console.log(`[sync-worker] Token owner userId: ${syncUserId || "unknown"}`);
 
   // Get all sites with sync enabled
   const enabledSites = await db.select().from(sites).where(eq(sites.syncEnabled, true));
@@ -123,6 +132,7 @@ export default async (req: Request, context: Context) => {
             createdAt: netlifyRun.created_at ? new Date(netlifyRun.created_at) : now,
             updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,
             syncedAt: now,
+            userId: syncUserId,
           });
 
           console.log(`[sync-worker] Inserted new run ${netlifyRun.id} (${netlifyRun.state})`);
