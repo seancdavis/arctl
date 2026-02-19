@@ -2,6 +2,7 @@ import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { runs } from "../../db/schema.ts";
 import { eq } from "drizzle-orm";
+import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 function parsePrUrl(
   url: string
@@ -50,6 +51,12 @@ const json = (data: any, status = 200) =>
 export default async (req: Request, context: Context) => {
   if (req.method !== "GET") {
     return json({ error: "Method not allowed" }, 405);
+  }
+
+  try {
+    await requireAuth(req);
+  } catch (err) {
+    return handleAuthError(err);
   }
 
   const url = new URL(req.url);

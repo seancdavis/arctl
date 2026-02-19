@@ -2,6 +2,7 @@ import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { sites } from "../../db/schema.ts";
 import { desc } from "drizzle-orm";
+import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
   if (req.method !== "GET") {
@@ -11,12 +12,11 @@ export default async (req: Request, context: Context) => {
     });
   }
 
-  const pat = Netlify.env.get("NETLIFY_PAT");
-  if (!pat) {
-    return new Response(
-      JSON.stringify({ error: "NETLIFY_PAT not configured" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+  let auth;
+  try {
+    auth = await requireAuth(req);
+  } catch (err) {
+    return handleAuthError(err);
   }
 
   // Try to get sites from cache first
@@ -40,7 +40,7 @@ export default async (req: Request, context: Context) => {
   // Fetch sites from Netlify API
   const sitesRes = await fetch(
     "https://api.netlify.com/api/v1/sites?per_page=100",
-    { headers: { Authorization: `Bearer ${pat}` } }
+    { headers: { Authorization: `Bearer ${auth.accessToken}` } }
   );
 
   if (!sitesRes.ok) {

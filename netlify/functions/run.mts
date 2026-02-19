@@ -2,8 +2,16 @@ import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { runs, sessions, notes } from "../../db/schema.ts";
 import { eq, asc } from "drizzle-orm";
+import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
+  let auth;
+  try {
+    auth = await requireAuth(req);
+  } catch (err) {
+    return handleAuthError(err);
+  }
+
   const url = new URL(req.url);
   const pathParts = url.pathname.split("/");
   const runId = pathParts[pathParts.length - 1];
@@ -20,72 +28,69 @@ export default async (req: Request, context: Context) => {
 
     // If sync=true, fetch fresh data from Netlify API and update DB first
     if (shouldSync) {
-      const pat = Netlify.env.get("NETLIFY_PAT");
-      if (pat) {
-        try {
-          const apiRes = await fetch(
-            `https://api.netlify.com/api/v1/agent_runners/${runId}`,
-            { headers: { Authorization: `Bearer ${pat}` } }
+      try {
+        const apiRes = await fetch(
+          `https://api.netlify.com/api/v1/agent_runners/${runId}`,
+          { headers: { Authorization: `Bearer ${auth.accessToken}` } }
+        );
+        if (apiRes.ok) {
+          const netlifyRun = await apiRes.json();
+          const now = new Date();
+
+          const [existingRun] = await db.select().from(runs).where(eq(runs.id, runId));
+          if (existingRun) {
+            await db
+              .update(runs)
+              .set({
+                state: (netlifyRun.state || existingRun.state).toUpperCase(),
+                title: netlifyRun.title || existingRun.title,
+                branch: netlifyRun.branch || existingRun.branch,
+                pullRequestUrl: netlifyRun.pr_url || existingRun.pullRequestUrl,
+                pullRequestState: netlifyRun.pr_state || existingRun.pullRequestState,
+                pullRequestBranch: netlifyRun.pr_branch || existingRun.pullRequestBranch,
+                deployPreviewUrl: netlifyRun.latest_session_deploy_url || existingRun.deployPreviewUrl,
+                updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,
+                syncedAt: now,
+              })
+              .where(eq(runs.id, runId));
+          }
+
+          // Sync sessions too
+          const sessionsRes = await fetch(
+            `https://api.netlify.com/api/v1/agent_runners/${runId}/sessions`,
+            { headers: { Authorization: `Bearer ${auth.accessToken}` } }
           );
-          if (apiRes.ok) {
-            const netlifyRun = await apiRes.json();
-            const now = new Date();
-
-            const [existingRun] = await db.select().from(runs).where(eq(runs.id, runId));
-            if (existingRun) {
-              await db
-                .update(runs)
-                .set({
-                  state: (netlifyRun.state || existingRun.state).toUpperCase(),
-                  title: netlifyRun.title || existingRun.title,
-                  branch: netlifyRun.branch || existingRun.branch,
-                  pullRequestUrl: netlifyRun.pr_url || existingRun.pullRequestUrl,
-                  pullRequestState: netlifyRun.pr_state || existingRun.pullRequestState,
-                  pullRequestBranch: netlifyRun.pr_branch || existingRun.pullRequestBranch,
-                  deployPreviewUrl: netlifyRun.latest_session_deploy_url || existingRun.deployPreviewUrl,
-                  updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,
-                  syncedAt: now,
-                })
-                .where(eq(runs.id, runId));
-            }
-
-            // Sync sessions too
-            const sessionsRes = await fetch(
-              `https://api.netlify.com/api/v1/agent_runners/${runId}/sessions`,
-              { headers: { Authorization: `Bearer ${pat}` } }
-            );
-            if (sessionsRes.ok) {
-              const netlifySessionList = await sessionsRes.json();
-              for (const session of netlifySessionList) {
-                const [existing] = await db.select().from(sessions).where(eq(sessions.id, session.id));
-                if (!existing) {
-                  await db.insert(sessions).values({
-                    id: session.id,
-                    runId: runId,
-                    state: session.state || "NEW",
-                    prompt: session.prompt || null,
-                    createdAt: session.created_at ? new Date(session.created_at) : now,
-                    updatedAt: session.updated_at ? new Date(session.updated_at) : now,
-                  });
-                  // If run has a PR, mark it as needing update
-                  if (netlifyRun.pr_url || existingRun?.pullRequestUrl) {
-                    await db.update(runs).set({ prNeedsUpdate: true }).where(eq(runs.id, runId));
-                  }
-                } else if (existing.state !== session.state) {
-                  await db
-                    .update(sessions)
-                    .set({
-                      state: session.state,
-                      updatedAt: session.updated_at ? new Date(session.updated_at) : now,
-                    })
-                    .where(eq(sessions.id, session.id));
+          if (sessionsRes.ok) {
+            const netlifySessionList = await sessionsRes.json();
+            for (const session of netlifySessionList) {
+              const [existing] = await db.select().from(sessions).where(eq(sessions.id, session.id));
+              if (!existing) {
+                await db.insert(sessions).values({
+                  id: session.id,
+                  runId: runId,
+                  state: session.state || "NEW",
+                  prompt: session.prompt || null,
+                  createdAt: session.created_at ? new Date(session.created_at) : now,
+                  updatedAt: session.updated_at ? new Date(session.updated_at) : now,
+                });
+                // If run has a PR, mark it as needing update
+                if (netlifyRun.pr_url || existingRun?.pullRequestUrl) {
+                  await db.update(runs).set({ prNeedsUpdate: true }).where(eq(runs.id, runId));
                 }
+              } else if (existing.state !== session.state) {
+                await db
+                  .update(sessions)
+                  .set({
+                    state: session.state,
+                    updatedAt: session.updated_at ? new Date(session.updated_at) : now,
+                  })
+                  .where(eq(sessions.id, session.id));
               }
             }
           }
-        } catch (e) {
-          console.error(`[run] Failed to sync run ${runId} from Netlify API:`, e);
         }
+      } catch (e) {
+        console.error(`[run] Failed to sync run ${runId} from Netlify API:`, e);
       }
     }
 

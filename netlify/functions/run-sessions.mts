@@ -2,8 +2,16 @@ import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { runs, sessions } from "../../db/schema.ts";
 import { eq, asc } from "drizzle-orm";
+import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
+  let auth;
+  try {
+    auth = await requireAuth(req);
+  } catch (err) {
+    return handleAuthError(err);
+  }
+
   const url = new URL(req.url);
   // Path: /api/runs/:id/sessions
   const pathParts = url.pathname.split("/");
@@ -47,21 +55,13 @@ export default async (req: Request, context: Context) => {
       });
     }
 
-    const pat = Netlify.env.get("NETLIFY_PAT");
-    if (!pat) {
-      return new Response(
-        JSON.stringify({ error: "NETLIFY_PAT not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
     // Create session via Netlify API
     const createRes = await fetch(
       `https://api.netlify.com/api/v1/agent_runners/${runId}/sessions`,
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${pat}`,
+          Authorization: `Bearer ${auth.accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ prompt }),
@@ -99,11 +99,13 @@ export default async (req: Request, context: Context) => {
     }
     await db.update(runs).set(runUpdates).where(eq(runs.id, runId));
 
-    // Trigger sync
+    // Trigger sync — pass accessToken for background worker
     const siteUrl = new URL(req.url).origin;
     try {
       await fetch(`${siteUrl}/api/sync/trigger`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken: auth.accessToken }),
       });
     } catch (e) {
       console.error("Failed to trigger sync:", e);

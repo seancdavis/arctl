@@ -2,8 +2,16 @@ import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { runs, notes } from "../../db/schema.ts";
 import { eq, asc } from "drizzle-orm";
+import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
+  let auth;
+  try {
+    auth = await requireAuth(req);
+  } catch (err) {
+    return handleAuthError(err);
+  }
+
   const url = new URL(req.url);
   // Path: /api/runs/:id/notes
   const pathParts = url.pathname.split("/");
@@ -55,6 +63,7 @@ export default async (req: Request, context: Context) => {
       runId,
       content: content.trim(),
       createdAt: now,
+      userId: auth.userId,
     });
 
     const [note] = await db.select().from(notes).where(eq(notes.id, id));

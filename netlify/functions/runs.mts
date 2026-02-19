@@ -2,9 +2,17 @@ import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { runs, sites } from "../../db/schema.ts";
 import { eq, isNull, isNotNull, desc } from "drizzle-orm";
+import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
   console.log(`[runs] ${req.method} ${req.url}`);
+
+  let auth;
+  try {
+    auth = await requireAuth(req);
+  } catch (err) {
+    return handleAuthError(err);
+  }
 
   if (req.method === "GET") {
     const url = new URL(req.url);
@@ -42,21 +50,13 @@ export default async (req: Request, context: Context) => {
       );
     }
 
-    const pat = Netlify.env.get("NETLIFY_PAT");
-    if (!pat) {
-      return new Response(
-        JSON.stringify({ error: "NETLIFY_PAT not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
     // Create run via Netlify API
     const apiUrl = `https://api.netlify.com/api/v1/agent_runners?site_id=${site_id}`;
     console.log(`[runs] Calling Netlify API: POST ${apiUrl}`);
     const createRes = await fetch(apiUrl, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${pat}`,
+          Authorization: `Bearer ${auth.accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ branch, prompt, agent }),
@@ -78,7 +78,7 @@ export default async (req: Request, context: Context) => {
     // Get site name
     const siteRes = await fetch(
       `https://api.netlify.com/api/v1/sites/${site_id}`,
-      { headers: { Authorization: `Bearer ${pat}` } }
+      { headers: { Authorization: `Bearer ${auth.accessToken}` } }
     );
     const site = siteRes.ok ? await siteRes.json() : null;
 
@@ -98,13 +98,16 @@ export default async (req: Request, context: Context) => {
       createdAt: netlifyRun.created_at ? new Date(netlifyRun.created_at) : now,
       updatedAt: netlifyRun.updated_at ? new Date(netlifyRun.updated_at) : now,
       syncedAt: now,
+      userId: auth.userId,
     });
 
-    // Trigger sync
+    // Trigger sync — pass accessToken so background worker can use it
     const siteUrl = new URL(req.url).origin;
     try {
       await fetch(`${siteUrl}/api/sync/trigger`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken: auth.accessToken }),
       });
     } catch (e) {
       console.error("Failed to trigger sync:", e);

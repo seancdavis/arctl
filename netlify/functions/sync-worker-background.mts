@@ -16,10 +16,21 @@ function getBackoffSeconds(consecutiveNoChange: number): number {
 export default async (req: Request, context: Context) => {
   console.log("[sync-worker] Starting sync");
 
-  const pat = Netlify.env.get("NETLIFY_PAT");
-  console.log(`[sync-worker] PAT exists: ${!!pat}, length: ${pat?.length || 0}`);
-  if (!pat) {
-    console.error("[sync-worker] NETLIFY_PAT not configured");
+  // Get access token from request body (passed by sync-trigger) or fall back to NETLIFY_PAT
+  let accessToken: string | undefined;
+  try {
+    const body = await req.json();
+    accessToken = body.accessToken;
+  } catch {
+    // No body
+  }
+  if (!accessToken) {
+    accessToken = Netlify.env.get("NETLIFY_PAT") || undefined;
+  }
+
+  console.log(`[sync-worker] Token source: ${accessToken ? "provided" : "none"}`);
+  if (!accessToken) {
+    console.error("[sync-worker] No access token available");
     return;
   }
 
@@ -37,7 +48,7 @@ export default async (req: Request, context: Context) => {
     try {
       const apiUrl = `https://api.netlify.com/api/v1/agent_runners?site_id=${siteId}`;
       console.log(`[sync-worker] Fetching: ${apiUrl}`);
-      const res = await fetch(apiUrl, { headers: { Authorization: `Bearer ${pat}` } });
+      const res = await fetch(apiUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
 
       console.log(`[sync-worker] Response status: ${res.status}`);
       if (!res.ok) {
@@ -94,7 +105,7 @@ export default async (req: Request, context: Context) => {
 
           const siteRes = await fetch(
             `https://api.netlify.com/api/v1/sites/${siteId}`,
-            { headers: { Authorization: `Bearer ${pat}` } }
+            { headers: { Authorization: `Bearer ${accessToken}` } }
           );
           const site = siteRes.ok ? await siteRes.json() : null;
 
@@ -121,7 +132,7 @@ export default async (req: Request, context: Context) => {
         try {
           const sessionsRes = await fetch(
             `https://api.netlify.com/api/v1/agent_runners/${netlifyRun.id}/sessions`,
-            { headers: { Authorization: `Bearer ${pat}` } }
+            { headers: { Authorization: `Bearer ${accessToken}` } }
           );
 
           if (sessionsRes.ok) {

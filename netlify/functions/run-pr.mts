@@ -2,6 +2,7 @@ import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { runs } from "../../db/schema.ts";
 import { eq } from "drizzle-orm";
+import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
   if (req.method !== "POST") {
@@ -9,6 +10,13 @@ export default async (req: Request, context: Context) => {
       status: 405,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  let auth;
+  try {
+    auth = await requireAuth(req);
+  } catch (err) {
+    return handleAuthError(err);
   }
 
   const url = new URL(req.url);
@@ -29,14 +37,6 @@ export default async (req: Request, context: Context) => {
       status: 404,
       headers: { "Content-Type": "application/json" },
     });
-  }
-
-  const pat = Netlify.env.get("NETLIFY_PAT");
-  if (!pat) {
-    return new Response(
-      JSON.stringify({ error: "NETLIFY_PAT not configured" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
   }
 
   // Check if this is an update action
@@ -73,7 +73,7 @@ export default async (req: Request, context: Context) => {
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${pat}`,
+          Authorization: `Bearer ${auth.accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ target_branch: run.pullRequestBranch }),
@@ -91,7 +91,7 @@ export default async (req: Request, context: Context) => {
     // Re-sync the run from API to get fresh state
     const syncRes = await fetch(
       `https://api.netlify.com/api/v1/agent_runners/${runId}`,
-      { headers: { Authorization: `Bearer ${pat}` } }
+      { headers: { Authorization: `Bearer ${auth.accessToken}` } }
     );
     if (syncRes.ok) {
       const netlifyRun = await syncRes.json();
@@ -148,7 +148,7 @@ export default async (req: Request, context: Context) => {
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${pat}`,
+        Authorization: `Bearer ${auth.accessToken}`,
         "Content-Type": "application/json",
       },
     }
