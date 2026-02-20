@@ -114,14 +114,14 @@ export function getKanbanColumn(run: Run): KanbanColumn | null {
 
 export const COLUMN_CONFIG: Record<
   KanbanColumn,
-  { title: string; color: string }
+  { color: string }
 > = {
-  new: { title: "New", color: "bg-blue-900/40 border-blue-500/50" },
-  running: { title: "Running", color: "bg-yellow-900/40 border-yellow-500/50" },
-  done: { title: "Done", color: "bg-teal-900/40 border-teal-500/50" },
-  pr_open: { title: "PR Open", color: "bg-green-900/40 border-green-500/50" },
-  pr_merged: { title: "PR Merged", color: "bg-purple-900/40 border-purple-500/50" },
-  error: { title: "Error", color: "bg-red-900/40 border-red-500/50" },
+  new: { color: "bg-[var(--surface-3)]/60 border-[var(--surface-4)]" },
+  running: { color: "bg-[#FFB300]/10 border-[#FFB300]/40" },
+  done: { color: "bg-[#00C7B7]/10 border-[#00C7B7]/40" },
+  pr_open: { color: "bg-[#39FF14]/10 border-[#39FF14]/40" },
+  pr_merged: { color: "bg-[#a855f7]/10 border-[#a855f7]/40" },
+  error: { color: "bg-[#ff3b5c]/10 border-[#ff3b5c]/40" },
 };
 
 export const COLUMN_ORDER: KanbanColumn[] = [

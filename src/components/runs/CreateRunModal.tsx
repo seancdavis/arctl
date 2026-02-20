@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useKanbanStore } from "../../store/kanbanStore";
 import { useSites } from "../../hooks/useSites";
 import { SitePicker } from "./SitePicker";
+import { COPY } from "../../copy";
 
 interface CreateRunModalProps {
   isOpen: boolean;
@@ -56,7 +57,7 @@ export function CreateRunModal({
       setAgent("");
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create run");
+      setError(err instanceof Error ? err.message : COPY.createRun.error);
     } finally {
       setIsSubmitting(false);
     }
@@ -66,15 +67,15 @@ export function CreateRunModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="create-run-title">
-      <div className="bg-[var(--surface-2)] rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-[var(--border)]">
+      <div className="bg-[var(--surface-2)] shadow-2xl w-full max-w-lg mx-4 border border-[var(--border)]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
-          <h2 id="create-run-title" className="text-lg font-semibold text-[var(--text-primary)]">
-            Create New Run
+          <h2 id="create-run-title" className="text-lg font-mono font-semibold text-[var(--text-primary)]">
+            {COPY.createRun.title}
           </h2>
           <button
             onClick={onClose}
-            aria-label="Close"
-            className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-cyan)] rounded"
+            aria-label={COPY.generic.close}
+            className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
           >
             <svg
               className="w-5 h-5"
@@ -94,7 +95,7 @@ export function CreateRunModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="bg-red-900/30 text-red-300 border border-red-800/50 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-[var(--accent-red)]/10 text-[var(--accent-red)] border border-[var(--accent-red)]/20 px-4 py-3 text-sm font-mono">
               {error}
             </div>
           )}
@@ -109,32 +110,32 @@ export function CreateRunModal({
           <div>
             <label
               htmlFor="branch"
-              className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
+              className="block text-sm font-mono font-medium text-[var(--text-secondary)] mb-1"
             >
-              Branch (optional)
+              {COPY.createRun.branch}
             </label>
             <input
               type="text"
               id="branch"
               value={branch}
               onChange={(e) => setBranch(e.target.value)}
-              placeholder="e.g., feature/my-branch"
-              className="w-full bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent"
+              placeholder={COPY.createRun.branchPlaceholder}
+              className="w-full bg-[var(--surface-3)] border border-[var(--border)] terminal-input px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent"
             />
           </div>
 
           <div>
             <label
               htmlFor="agent"
-              className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
+              className="block text-sm font-mono font-medium text-[var(--text-secondary)] mb-1"
             >
-              Agent
+              {COPY.createRun.agent}
             </label>
             <select
               id="agent"
               value={agent}
               onChange={(e) => setAgent(e.target.value)}
-              className="w-full bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent"
+              className="w-full bg-[var(--surface-3)] border border-[var(--border)] px-3 py-2 font-mono text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent"
             >
               <option value="claude">Claude</option>
               <option value="gemini">Gemini</option>
@@ -145,17 +146,17 @@ export function CreateRunModal({
           <div>
             <label
               htmlFor="prompt"
-              className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
+              className="block text-sm font-mono font-medium text-[var(--text-secondary)] mb-1"
             >
-              Prompt
+              {COPY.createRun.prompt}
             </label>
             <textarea
               id="prompt"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe what you want the agent to do..."
+              placeholder={COPY.createRun.promptPlaceholder}
               rows={4}
-              className="w-full bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent resize-none"
+              className="w-full bg-[var(--surface-3)] border border-[var(--border)] terminal-input px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent resize-none"
             />
           </div>
 
@@ -163,16 +164,16 @@ export function CreateRunModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-[var(--text-secondary)] hover:bg-[var(--surface-3)] rounded-lg transition-colors"
+              className="px-4 py-2 font-mono text-[var(--text-secondary)] hover:bg-[var(--surface-3)] transition-colors"
             >
-              Cancel
+              {COPY.createRun.cancel}
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !siteId || !prompt.trim()}
-              className="btn-neon px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-neon px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? "Creating..." : "Create Run"}
+              {isSubmitting ? COPY.createRun.submitting : COPY.createRun.submit}
             </button>
           </div>
         </form>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Note } from "../../types/runs";
+import { COPY } from "../../copy";
 
 const NOTE_COLLAPSE_LENGTH = 200;
 
@@ -18,9 +19,9 @@ export function NoteCard({ note }: { note: Note }) {
   const isLong = note.content.length > NOTE_COLLAPSE_LENGTH;
 
   return (
-    <div className="bg-[var(--surface-3)] rounded-lg px-3 py-2.5 text-sm">
+    <div className="bg-[var(--surface-3)] px-3 py-2.5 text-sm">
       <div className="flex items-center mb-1">
-        <span className="text-[var(--text-tertiary)] text-xs">
+        <span className="text-[var(--text-tertiary)] text-xs font-mono">
           {formatDate(note.createdAt)}
         </span>
       </div>
@@ -31,9 +32,9 @@ export function NoteCard({ note }: { note: Note }) {
         {isLong && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-xs text-[var(--accent-blue)] hover:brightness-125 mt-1"
+            className="text-xs font-mono text-[var(--accent-blue)] hover:brightness-125 mt-1"
           >
-            {expanded ? "Show less" : "Show more"}
+            {expanded ? COPY.detail.showLess : COPY.detail.showMore}
           </button>
         )}
       </div>

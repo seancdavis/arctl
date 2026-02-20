@@ -81,7 +81,7 @@ function AuthenticatedApp() {
 
         <main className="p-4 md:p-6 flex-1 pb-20 md:pb-6">
           {error && (
-            <div className="mb-4 bg-[var(--accent-red)]/10 text-[var(--accent-red)] border border-[var(--accent-red)]/20 px-4 py-3 rounded-lg">
+            <div className="mb-4 bg-[var(--accent-red)]/10 text-[var(--accent-red)] border border-[var(--accent-red)]/20 px-4 py-3 font-mono text-sm">
               {error}
             </div>
           )}

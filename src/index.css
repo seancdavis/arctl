@@ -4,21 +4,24 @@
 
 @layer base {
   :root {
-    --surface-0: #0c0e14;
-    --surface-1: #12151e;
-    --surface-2: #1a1d2b;
-    --surface-3: #222638;
-    --surface-4: #2a2f44;
-    --border: #2a2f44;
-    --border-subtle: #1e2235;
+    --surface-0: #0E1E25;
+    --surface-1: #132A33;
+    --surface-2: #1A3340;
+    --surface-3: #213D4D;
+    --surface-4: #2A4A5A;
+    --border: #2A4A5A;
+    --border-subtle: #1D3545;
     --text-primary: #e8eaf0;
     --text-secondary: #9ba1b5;
     --text-tertiary: #646b82;
-    --accent-blue: #00d4ff;
-    --accent-blue-hover: #00b8e6;
-    --accent-blue-glow: rgba(0, 212, 255, 0.35);
-    --accent-green: #00ff9d;
+    --accent-blue: #00C7B7;
+    --accent-blue-hover: #00B0A2;
+    --accent-blue-glow: rgba(0, 199, 183, 0.35);
+    --accent-green: #39FF14;
     --accent-red: #ff3b5c;
+    --accent-amber: #FFB300;
+
+    --font-mono: "JetBrains Mono", monospace;
 
     --sidebar-width-collapsed: 60px;
     --sidebar-width-expanded: 200px;
@@ -39,9 +42,12 @@
 
 /* Neon glow button */
 .btn-neon {
-  background: linear-gradient(135deg, var(--accent-blue) 0%, #00b8e6 100%);
-  color: #0c0e14;
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-hover) 100%);
+  color: var(--surface-0);
+  font-family: var(--font-mono);
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   box-shadow: 0 0 14px var(--accent-blue-glow), 0 0 4px var(--accent-blue-glow);
   transition: box-shadow 0.2s, transform 0.15s, background 0.2s;
 }
@@ -52,4 +58,18 @@
 .btn-neon:active {
   transform: translateY(0);
   box-shadow: 0 0 10px var(--accent-blue-glow);
+}
+
+/* Terminal input — left accent border */
+.terminal-input {
+  border-left: 2px solid var(--accent-blue);
+}
+
+/* Blinking caret animation */
+@keyframes blink-caret {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.animate-caret {
+  animation: blink-caret 1s step-end infinite;
 }
