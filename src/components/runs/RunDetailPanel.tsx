@@ -16,10 +16,10 @@ interface RunDetailPanelProps {
 }
 
 const STATE_BADGES: Record<string, { className: string }> = {
-  NEW: { className: "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)]" },
-  RUNNING: { className: "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" },
-  DONE: { className: "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)]" },
-  ERROR: { className: "bg-[var(--accent-red)]/20 text-[var(--accent-red)]" },
+  NEW: { className: "bg-[var(--surface-4)] text-[var(--text-secondary)] border border-[var(--border)]" },
+  RUNNING: { className: "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30" },
+  DONE: { className: "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border border-[var(--accent-blue)]/30" },
+  ERROR: { className: "bg-[var(--accent-red)]/20 text-[var(--accent-red)] border border-[var(--accent-red)]/30" },
 };
 
 function formatDate(dateString: string) {

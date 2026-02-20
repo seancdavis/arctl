@@ -116,11 +116,11 @@ export const COLUMN_CONFIG: Record<
   KanbanColumn,
   { color: string }
 > = {
-  new: { color: "bg-[#00C7B7]/10 border-[#00C7B7]/40" },
+  new: { color: "bg-[var(--surface-3)]/60 border-[var(--surface-4)]" },
   running: { color: "bg-[#FFB300]/10 border-[#FFB300]/40" },
   done: { color: "bg-[#00C7B7]/10 border-[#00C7B7]/40" },
   pr_open: { color: "bg-[#39FF14]/10 border-[#39FF14]/40" },
-  pr_merged: { color: "bg-[#39FF14]/15 border-[#39FF14]/50" },
+  pr_merged: { color: "bg-[#a855f7]/10 border-[#a855f7]/40" },
   error: { color: "bg-[#ff3b5c]/10 border-[#ff3b5c]/40" },
 };
 
