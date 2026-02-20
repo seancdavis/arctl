@@ -85,6 +85,17 @@ export const COPY = {
     updatingPr: "Updating PR...",
     prUpdated: "PR Updated",
     archive: "Archive",
+    mergePr: "Merge PR",
+    mergingPr: "Merging...",
+    prMerged: "PR Merged",
+    failedMergePr: "Failed to merge PR",
+    mergeDisabledChecks: "Checks must pass before merging",
+    mergeDisabledConflicts: "Resolve conflicts before merging",
+    prSubNone: "No PR",
+    prSubOutdated: "PR Stale",
+    prSubOpen: "PR Open",
+    prSubMerged: "PR Merged",
+    prSubClosed: "PR Closed",
     failedCreatePr: "Failed to open PR",
     failedUpdatePr: "Failed to update PR",
   },
@@ -211,6 +222,21 @@ export const COPY = {
     done: "Done",
     created: (date: string) => `Created ${date}`,
     lastUsed: (date: string) => `Last used ${date}`,
+  },
+
+  session: {
+    viewDiff: "View Diff",
+    hideDiff: "Hide Diff",
+    loadingDiff: "Loading diff...",
+    noDiff: "No diff available",
+    result: "Result",
+    hideResult: "Hide result",
+    duration: (seconds: number) => {
+      if (seconds < 60) return `${seconds}s`;
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+    },
   },
 
   generic: {

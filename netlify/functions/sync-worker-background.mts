@@ -161,19 +161,34 @@ export default async (req: Request, context: Context) => {
                   prompt: session.prompt || null,
                   createdAt: session.created_at ? new Date(session.created_at) : now,
                   updatedAt: session.updated_at ? new Date(session.updated_at) : now,
+                  title: session.title || null,
+                  result: session.result || null,
+                  duration: session.duration ?? null,
+                  doneAt: session.done_at ? new Date(session.done_at) : null,
+                  mode: session.mode || null,
+                  hasResultDiff: session.has_result_diff ?? false,
                 });
                 // If this run has a PR, mark it as needing update
                 const prUrl = netlifyRun.pr_url || (existingRun?.pullRequestUrl);
                 if (prUrl) {
                   await db.update(runs).set({ prNeedsUpdate: true }).where(eq(runs.id, netlifyRun.id));
                 }
-              } else if (existingSession.state !== session.state) {
+              } else {
+                const sessionUpdates: Record<string, any> = {};
+                if (existingSession.state !== session.state) {
+                  sessionUpdates.state = session.state;
+                }
+                sessionUpdates.updatedAt = session.updated_at ? new Date(session.updated_at) : now;
+                if (session.title) sessionUpdates.title = session.title;
+                if (session.result) sessionUpdates.result = session.result;
+                if (session.duration != null) sessionUpdates.duration = session.duration;
+                if (session.done_at) sessionUpdates.doneAt = new Date(session.done_at);
+                if (session.mode) sessionUpdates.mode = session.mode;
+                if (session.has_result_diff != null) sessionUpdates.hasResultDiff = session.has_result_diff;
+
                 await db
                   .update(sessions)
-                  .set({
-                    state: session.state,
-                    updatedAt: session.updated_at ? new Date(session.updated_at) : now,
-                  })
+                  .set(sessionUpdates)
                   .where(eq(sessions.id, session.id));
               }
             }

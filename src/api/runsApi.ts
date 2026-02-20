@@ -136,6 +136,34 @@ export async function addNote(
   return res.json();
 }
 
+export async function mergePullRequest(runId: string): Promise<Run> {
+  const res = await fetchWithAuth(`${API_BASE}/runs/${runId}/pr-merge`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(
+      error.error || `Failed to merge PR: ${res.statusText}`
+    );
+  }
+  return res.json();
+}
+
+export async function fetchSessionDiff(
+  runId: string,
+  sessionId: string,
+  type: "result" | "cumulative" = "result"
+): Promise<{ diff: string | null; type: string }> {
+  const res = await fetchWithAuth(
+    `${API_BASE}/runs/${runId}/sessions/${sessionId}/diff?type=${type}`
+  );
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || `Failed to fetch diff: ${res.statusText}`);
+  }
+  return res.json();
+}
+
 export async function updatePullRequest(runId: string): Promise<Run> {
   const res = await fetchWithAuth(`${API_BASE}/runs/${runId}/pull-request`, {
     method: "POST",

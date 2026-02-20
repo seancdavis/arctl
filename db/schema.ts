@@ -37,6 +37,7 @@ export const runs = pgTable("runs", {
   prCommittedAt: timestamp("pr_committed_at", { withTimezone: true }),
   prNeedsUpdate: boolean("pr_needs_update").default(false).notNull(),
   prCheckStatus: text("pr_check_status"), // pending, success, failure
+  mergedAt: timestamp("merged_at", { withTimezone: true }),
   userId: uuid("user_id").references(() => users.id),
 });
 
@@ -49,6 +50,12 @@ export const sessions = pgTable("sessions", {
   prompt: text("prompt"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  title: text("title"),
+  result: text("result"),
+  duration: integer("duration"),
+  doneAt: timestamp("done_at", { withTimezone: true }),
+  mode: text("mode"),
+  hasResultDiff: boolean("has_result_diff").default(false),
 });
 
 export const notes = pgTable("notes", {

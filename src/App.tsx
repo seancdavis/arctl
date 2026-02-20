@@ -56,6 +56,7 @@ function AuthenticatedApp() {
     addSession,
     createPullRequest,
     updatePullRequest,
+    mergePullRequest,
   } = useRuns();
 
   const { refresh } = useSyncStatus();
@@ -100,6 +101,7 @@ function AuthenticatedApp() {
                     onArchive={archiveRun}
                     onCreatePR={createPullRequest}
                     onUpdatePR={updatePullRequest}
+                    onMergePR={mergePullRequest}
                     onAddSession={addSession}
                   />
                 }

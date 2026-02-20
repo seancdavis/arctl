@@ -21,6 +21,7 @@ export interface Run {
   prCommittedAt: string | null;
   prNeedsUpdate: boolean;
   prCheckStatus: string | null;
+  mergedAt: string | null;
 }
 
 export interface Session {
@@ -30,6 +31,12 @@ export interface Session {
   prompt: string | null;
   createdAt: string;
   updatedAt: string;
+  title: string | null;
+  result: string | null;
+  duration: number | null;
+  doneAt: string | null;
+  mode: string | null;
+  hasResultDiff: boolean;
 }
 
 export interface Note {

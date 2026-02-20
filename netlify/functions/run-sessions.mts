@@ -73,6 +73,12 @@ export default async (req: Request, context: Context) => {
       prompt: prompt,
       createdAt: netlifySession.created_at ? new Date(netlifySession.created_at) : now,
       updatedAt: netlifySession.updated_at ? new Date(netlifySession.updated_at) : now,
+      title: netlifySession.title || null,
+      result: netlifySession.result || null,
+      duration: netlifySession.duration ?? null,
+      doneAt: netlifySession.done_at ? new Date(netlifySession.done_at) : null,
+      mode: netlifySession.mode || null,
+      hasResultDiff: netlifySession.has_result_diff ?? false,
     });
 
     // Update run state to RUNNING if it was DONE

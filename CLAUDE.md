@@ -33,7 +33,7 @@ docs/
   agent-api.md       # API docs for agents using the proxy endpoint
 migrations/          # Drizzle migrations (auto-generated)
 netlify/functions/
-  _shared/           # Shared utilities (session, scopes, origin, auth)
+  _shared/           # Shared utilities (session, scopes, origin, auth, github)
   auth-login.mts     # GET /api/auth/login (OAuth redirect)
   auth-callback.mts  # GET /api/auth/callback (OAuth token exchange)
   auth-logout.mts    # GET,POST /api/auth/logout
@@ -44,6 +44,9 @@ netlify/functions/
   run-pr.mts         # POST /api/runs/:id/pull-request (create + update)
   run-notes.mts      # GET/POST /api/runs/:id/notes
   run-pr-status.mts  # GET /api/runs/:id/pr-status (GitHub CI/review status)
+  run-pr-merge.mts   # POST /api/runs/:id/pr-merge (squash merge via GitHub)
+  run-session-diff.mts # GET /api/runs/:id/sessions/:sessionId/diff
+  github-webhook.mts # POST /api/webhooks/github (GitHub webhook receiver)
   api-keys.mts       # GET/POST/DELETE /api/keys (API key management)
   proxy.mts          # ALL /api/proxy/* (Netlify API proxy with API key auth)
   sites.mts          # GET /api/sites (cached)
@@ -87,8 +90,8 @@ src/
 
 ### Database Schema (Drizzle)
 - **users**: id (uuid), netlifyUserId, email, fullName, avatarUrl, accessToken, timestamps
-- **runs**: id, siteId, siteName, title, state, branch, pullRequestUrl, pullRequestState, pullRequestBranch, deployPreviewUrl, timestamps (with timezone), prCommittedAt, prNeedsUpdate, prCheckStatus, archivedAt, userId (FK→users, nullable)
-- **sessions**: id, runId, state, prompt, timestamps (with timezone)
+- **runs**: id, siteId, siteName, title, state, branch, pullRequestUrl, pullRequestState, pullRequestBranch, deployPreviewUrl, timestamps (with timezone), prCommittedAt, prNeedsUpdate, prCheckStatus, mergedAt, archivedAt, userId (FK→users, nullable)
+- **sessions**: id, runId, state, prompt, timestamps (with timezone), title, result, duration (seconds), doneAt, mode, hasResultDiff
 - **notes**: id, runId, content, createdAt (with timezone), userId (FK→users, nullable)
 - **apiKeys**: id (uuid), userId (FK→users), keyHash (unique), keyPrefix, name, siteId, siteName, scopes (jsonb), expiresAt, isRevoked, lastUsedAt, createdAt
 - **auditLog**: id (uuid), apiKeyId (FK→apiKeys), userId (FK→users), action, siteId, netlifyEndpoint, statusCode, createdAt
@@ -143,7 +146,8 @@ The `?sync=true` query param on `/api/runs/:id` fetches from Netlify API, update
 - `ALLOWED_NETLIFY_USER_IDS` - Comma-separated Netlify user IDs for access allowlist
 - `NETLIFY_REDIRECT_URI` - Full callback URL (e.g., `https://your-app.netlify.app/api/auth/callback`)
 - `NETLIFY_PAT` - Fallback-only for sync worker when no user token available
-- `GITHUB_PAT` - GitHub Personal Access Token (required for PR status checks)
+- `GITHUB_PAT` - GitHub Personal Access Token (required for PR status checks, merging)
+- `GITHUB_WEBHOOK_SECRET` - HMAC secret for validating GitHub webhook signatures
 - `NETLIFY_DATABASE_URL` - Auto-provisioned by Netlify DB
 
 ### Data Scoping
@@ -205,8 +209,12 @@ npm run db:studio    # Open Drizzle Studio
 
 - [x] **arctl rebrand** — "Terminal Chic" aesthetic with JetBrains Mono, teal palette, centralized copy (`src/copy.ts`), hard edges, `[site-name]` card prefixes
 
+- [x] **PR Merge** — Squash merge PRs from within the app via GitHub API
+- [x] **GitHub Webhooks** — Real-time PR/check/deploy status updates via webhook endpoint
+- [x] **Session Details** — Title, mode, duration, result summary, and on-demand diff viewer for agent sessions
+- [x] Shared GitHub utilities extracted to `_shared/github.mts`
+
 ### Not Yet Implemented
-- [ ] Diff viewer for run changes
 - [ ] Filter/search runs by site or branch
 
 ## Netlify Primitives Reference
@@ -234,6 +242,9 @@ All Netlify Functions must use clean `/api` routes via the `config.path` export.
 | run-notes.mts | `/api/runs/:id/notes` | GET, POST | Local notes, no Netlify API |
 | run-pr.mts | `/api/runs/:id/pull-request` | POST | `{action:"update"}` to commit to PR branch |
 | run-pr-status.mts | `/api/runs/:id/pr-status` | GET | GitHub CI checks, reviews, mergeability |
+| run-pr-merge.mts | `/api/runs/:id/pr-merge` | POST | Squash merge PR via GitHub API |
+| run-session-diff.mts | `/api/runs/:id/sessions/:sessionId/diff` | GET | Proxy session diff from Netlify API |
+| github-webhook.mts | `/api/webhooks/github` | POST | GitHub webhook receiver (HMAC validated) |
 | api-keys.mts | `/api/keys`, `/api/keys/:id` | GET, POST, DELETE | API key CRUD |
 | proxy.mts | `/api/proxy/*` | ALL | Netlify API proxy with API key auth |
 | sites.mts | `/api/sites` | GET | Cached 5 min |
@@ -270,6 +281,28 @@ The proxy automatically injects `site_id` for collection endpoints and verifies 
 | `agent_runners:read` | GET on any agent_runners path | Low |
 | `agent_runners:write` | POST/PATCH/PUT/DELETE on agent_runners | Medium |
 | `agent_runners:deploy` | Actions on pull_request, commit, redeploy, deploy | High |
+
+### GitHub Webhook Setup
+
+To receive real-time updates from GitHub (PR merges, check status, deploy previews), configure a webhook on each repo:
+
+1. Go to repo Settings → Webhooks → Add webhook
+2. **Payload URL**: `https://{your-site}.netlify.app/api/webhooks/github`
+3. **Content type**: `application/json`
+4. **Secret**: Same value as `GITHUB_WEBHOOK_SECRET` env var
+5. **Events**: Select "Let me select individual events" and check:
+   - Pull requests
+   - Check runs
+   - Statuses
+
+The webhook endpoint validates signatures via HMAC-SHA256. Webhook queries are not user-scoped (GitHub has no user context) but only update status fields, never ownership or access control.
+
+Shared GitHub utilities live in `netlify/functions/_shared/github.mts`:
+- `parsePrUrl(url)` — regex parser for `{owner, repo, number}`
+- `githubHeaders(pat)` — returns auth + accept headers
+- `computeOverallCheckStatus(checks)` — failure/pending/success logic
+- `computeReviewDecision(reviews)` — approved/changes_requested/pending logic
+- `fetchAllChecks(owner, repo, sha, pat)` — fetches check runs + commit statuses, returns normalized list
 
 ## Notes
 
