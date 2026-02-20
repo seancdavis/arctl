@@ -205,17 +205,20 @@ function PrStatusSection({
   runId,
   hasPr,
   pullRequestState,
+  cachedCheckStatus,
+  cachedDeployPreviewUrl,
   onMergePR,
 }: {
   runId: string;
   hasPr: boolean;
   pullRequestState: string | null;
+  cachedCheckStatus: string | null;
+  cachedDeployPreviewUrl: string | null;
   onMergePR: (id: string) => void;
 }) {
   const updateStoreRun = useKanbanStore((s) => s.updateRun);
   const [prStatus, setPrStatus] = useState<PrStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(true);
   const [checksExpanded, setChecksExpanded] = useState(false);
   const [mergeAction, setMergeAction] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [mergeError, setMergeError] = useState<string | null>(null);
@@ -241,11 +244,11 @@ function PrStatusSection({
     let cancelled = false;
 
     const load = async () => {
+      setIsRefreshing(true);
       try {
         const status = await fetchPrStatus(runId);
         if (!cancelled) {
           setPrStatus(status);
-          setError(null);
           const currentRuns = useKanbanStore.getState().runs;
           const current = currentRuns.find((r) => r.id === runId);
           if (current) {
@@ -256,12 +259,10 @@ function PrStatusSection({
             });
           }
         }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load PR status");
-        }
+      } catch {
+        // Silently ignore — cached data is still displayed
       } finally {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) setIsRefreshing(false);
       }
     };
 
@@ -283,31 +284,13 @@ function PrStatusSection({
 
   if (!hasPr) return null;
 
-  if (isLoading) {
-    return (
-      <div className="space-y-2">
-        <h3 className="text-xs font-mono font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-          {COPY.prStatus.heading}
-        </h3>
-        <div className="text-sm font-mono text-[var(--text-tertiary)] py-2">{COPY.prStatus.loading}</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-2">
-        <h3 className="text-xs font-mono font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-          {COPY.prStatus.heading}
-        </h3>
-        <div className="text-xs text-[var(--text-tertiary)] py-1">{error}</div>
-      </div>
-    );
-  }
-
-  if (!prStatus) return null;
-
-  const { overallCheckStatus, reviewDecision, mergeable, checks, checksUrl, deployPreviewUrl } = prStatus;
+  // Use live data when available, fall back to cached DB values
+  const overallCheckStatus = prStatus?.overallCheckStatus ?? cachedCheckStatus;
+  const reviewDecision = prStatus?.reviewDecision ?? null;
+  const mergeable = prStatus?.mergeable ?? null;
+  const checks = prStatus?.checks ?? [];
+  const checksUrl = prStatus?.checksUrl ?? null;
+  const deployPreviewUrl = prStatus?.deployPreviewUrl ?? cachedDeployPreviewUrl;
 
   let bannerText = "";
   let bannerClass = "";
@@ -338,9 +321,17 @@ function PrStatusSection({
 
   return (
     <div className="space-y-2">
-      <h3 className="text-xs font-mono font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
-        {COPY.prStatus.heading}
-      </h3>
+      <div className="flex items-center gap-2">
+        <h3 className="text-xs font-mono font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">
+          {COPY.prStatus.heading}
+        </h3>
+        {isRefreshing && (
+          <svg className="w-3 h-3 text-[var(--text-tertiary)] animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        )}
+      </div>
 
       {bannerText && (
         <div className={`text-sm font-mono font-medium px-3 py-2 border ${bannerClass}`}>
@@ -404,15 +395,17 @@ function PrStatusSection({
               {failingChecks.length > 0 && COPY.prStatus.failing(failingChecks.length)}
               {pendingChecks.length > 0 && COPY.prStatus.pending(pendingChecks.length)}
             </span>
-            <a
-              href={checksUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-auto text-[var(--accent-blue)] hover:brightness-125"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {COPY.prStatus.viewAll}
-            </a>
+            {checksUrl && (
+              <a
+                href={checksUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-auto text-[var(--accent-blue)] hover:brightness-125"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {COPY.prStatus.viewAll}
+              </a>
+            )}
           </button>
 
           {checksExpanded && (
@@ -773,6 +766,8 @@ export function RunDetailPanel({
                 runId={run.id}
                 hasPr={!!run.pullRequestUrl}
                 pullRequestState={run.pullRequestState}
+                cachedCheckStatus={run.prCheckStatus}
+                cachedDeployPreviewUrl={run.deployPreviewUrl}
                 onMergePR={async (id) => {
                   await onMergePR(id);
                   const data = await fetchRun(id);
