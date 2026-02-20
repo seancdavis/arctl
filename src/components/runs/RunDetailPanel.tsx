@@ -687,6 +687,31 @@ export function RunDetailPanel({
                       {stateLabel}
                     </span>
                   )}
+                  {run.state === "DONE" && (() => {
+                    let label: string;
+                    let className: string;
+                    if (!run.pullRequestUrl) {
+                      label = COPY.detail.prSubNone;
+                      className = "bg-[var(--surface-4)] text-[var(--text-secondary)] border border-[var(--border)]";
+                    } else if (run.pullRequestState === "merged") {
+                      label = COPY.detail.prSubMerged;
+                      className = "bg-[#a855f7]/20 text-[#a855f7] border border-[#a855f7]/30";
+                    } else if (run.pullRequestState === "closed") {
+                      label = COPY.detail.prSubClosed;
+                      className = "bg-[var(--accent-red)]/20 text-[var(--accent-red)] border border-[var(--accent-red)]/30";
+                    } else if (run.prNeedsUpdate) {
+                      label = COPY.detail.prSubOutdated;
+                      className = "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30";
+                    } else {
+                      label = COPY.detail.prSubOpen;
+                      className = "bg-[var(--accent-green)]/20 text-[var(--accent-green)] border border-[var(--accent-green)]/30";
+                    }
+                    return (
+                      <span className={`text-xs font-mono px-2 py-0.5 font-medium ${className}`}>
+                        {label}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
