@@ -21,6 +21,7 @@ Relevant skills:
 - **API**: Netlify Agent Runners API (api.netlify.com/v1)
 - **Auth**: Netlify OAuth + HMAC session cookies
 - **Routing**: react-router-dom (client-side routing)
+- **Dev Server**: `netlify dev` (serves both Vite frontend and Netlify Functions)
 
 ## Project Structure
 
@@ -28,6 +29,8 @@ Relevant skills:
 db/
   schema.ts          # Drizzle schema (users, runs, sessions, notes, apiKeys, auditLog, sites, syncState)
   index.ts           # DB connection via @netlify/neon
+docs/
+  agent-api.md       # API docs for agents using the proxy endpoint
 migrations/          # Drizzle migrations (auto-generated)
 netlify/functions/
   _shared/           # Shared utilities (session, scopes, origin, auth)
@@ -144,12 +147,14 @@ The `?sync=true` query param on `/api/runs/:id` fetches from Netlify API, update
 ## Development Commands
 
 ```bash
-npm run dev          # Start dev server (with Netlify functions)
+npm run dev          # Start dev server (netlify dev → Vite + Functions)
 npm run build        # Build for production
 npm run db:generate  # Generate Drizzle migration
 npm run db:migrate   # Run migrations (via netlify dev:exec)
 npm run db:studio    # Open Drizzle Studio
 ```
+
+`npm run dev` runs `netlify dev --no-open`, which starts Vite on port 5173 and proxies through port 8888 to serve both the frontend and Netlify Functions. The SPA fallback is handled by `public/_redirects`.
 
 **NEVER use `db:push`** — always use `db:generate` + `db:migrate` for schema changes. The `db:push` script exists but should not be used; it bypasses migration tracking and causes issues.
 
@@ -187,22 +192,9 @@ npm run db:studio    # Open Drizzle Studio
 - [x] Netlify API proxy with API key auth (/api/proxy/*)
 - [x] Audit logging for proxy requests
 - [x] Frontend 401 handling (auto-redirect to login)
-
-### Blocked / Not Yet Tested
-- [ ] **Auth flow not tested** — local dev server doesn't serve Netlify Functions (see below)
-- [ ] OAuth app needs to be configured at app.netlify.com/user/applications with the correct redirect URI
-- [ ] Environment variables need to be set: `NETLIFY_OAUTH_CLIENT_ID`, `NETLIFY_OAUTH_CLIENT_SECRET`, `SESSION_SECRET`, `ALLOWED_NETLIFY_USER_IDS`, `NETLIFY_REDIRECT_URI`
-
-### Dev Server Issue (CURRENT BLOCKER)
-The dev server is misconfigured. `npm run dev` runs `vite` on port 5173, but Netlify Functions are not being served — navigating to `/api/auth/login` shows a blank white screen (SPA catch-all) instead of executing the function.
-
-The `netlify.toml` has a `[dev]` section configured for `netlify dev` (port 8888, targetPort 5173), but `package.json` dev script is just `"vite"`. The project uses `@netlify/vite-plugin` in `vite.config.ts`.
-
-**To fix**: Need to pick ONE approach — either:
-1. `@netlify/vite-plugin` handles functions through Vite (no `netlify dev` needed), OR
-2. Use `netlify dev` as the dev command and remove the Vite plugin's function handling
-
-The middleware app that was merged in (`netlify-openclaw-middleware`) may have a working dev setup to reference. Study that project's `package.json` dev script, `netlify.toml`, and `vite.config.ts` to determine the correct approach.
+- [x] Dev server fixed (`netlify dev` serves both Vite and Functions)
+- [x] Auth flow tested and working with multiple accounts
+- [x] Agent API documentation (`docs/agent-api.md`)
 
 ### Not Yet Implemented
 - [ ] Diff viewer for run changes
