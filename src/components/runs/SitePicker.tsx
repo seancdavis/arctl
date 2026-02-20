@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Site } from "../../types/runs";
+import { COPY } from "../../copy";
 
 interface SitePickerProps {
   sites: Site[];
@@ -14,7 +15,6 @@ export function SitePicker({
   onChange,
   lastUsedSiteId,
 }: SitePickerProps) {
-  // Filter to only enabled sites, sort by most recently updated (last used first)
   const sortedSites = useMemo(() => {
     return [...sites]
       .filter((site) => site.syncEnabled)
@@ -31,17 +31,17 @@ export function SitePicker({
     <div>
       <label
         htmlFor="site"
-        className="block text-sm font-medium text-[var(--text-secondary)] mb-1"
+        className="block text-sm font-mono font-medium text-[var(--text-secondary)] mb-1"
       >
-        Site
+        {COPY.detail.site}
       </label>
       <select
         id="site"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent"
+        className="w-full bg-[var(--surface-3)] border border-[var(--border)] px-3 py-2 font-mono text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent"
       >
-        <option value="">Select a site...</option>
+        <option value="">{COPY.apiKeys.sitePlaceholder}</option>
         {sortedSites.map((site) => (
           <option key={site.id} value={site.id}>
             {site.name}

@@ -1,5 +1,6 @@
 import { useState, type JSX } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { COPY } from "../../copy";
 
 interface NavItem {
   path: string;
@@ -10,7 +11,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     path: "/",
-    label: "Board",
+    label: COPY.nav.board,
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
@@ -24,7 +25,7 @@ const navItems: NavItem[] = [
   },
   {
     path: "/archive",
-    label: "Archive",
+    label: COPY.nav.archive,
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
@@ -38,7 +39,7 @@ const navItems: NavItem[] = [
   },
   {
     path: "/api-keys",
-    label: "Keys",
+    label: COPY.nav.keys,
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
@@ -52,7 +53,7 @@ const navItems: NavItem[] = [
   },
   {
     path: "/settings",
-    label: "Settings",
+    label: COPY.nav.settings,
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
@@ -75,7 +76,7 @@ const navItems: NavItem[] = [
 function Tooltip({ label, visible }: { label: string; visible: boolean }) {
   return (
     <span
-      className={`absolute left-full ml-3 px-2.5 py-1 text-xs font-medium rounded-md whitespace-nowrap
+      className={`absolute left-full ml-3 px-2.5 py-1 text-xs font-mono font-medium whitespace-nowrap
         bg-[var(--surface-4)] text-[var(--text-primary)] border border-[var(--border)]
         shadow-lg shadow-black/40
         pointer-events-none transition-all duration-150
@@ -104,7 +105,7 @@ function NavButton({
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`relative flex items-center gap-3 rounded-lg transition-colors
+      className={`relative flex items-center gap-3 transition-colors
         ${expanded ? "w-full px-3 h-10" : "w-10 h-10 justify-center"}
         ${
           isActive
@@ -113,11 +114,11 @@ function NavButton({
         }`}
     >
       {isActive && (
-        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-[var(--accent-blue)] shadow-[0_0_8px_var(--accent-blue-glow)]" />
+        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] bg-[var(--accent-blue)] shadow-[0_0_8px_var(--accent-blue-glow)]" />
       )}
       {item.icon}
       {expanded && (
-        <span className="text-sm font-medium truncate">{item.label}</span>
+        <span className="text-sm font-mono font-medium truncate">{item.label}</span>
       )}
       {!expanded && <Tooltip label={item.label} visible={hovered} />}
     </button>
@@ -139,7 +140,7 @@ function ToggleButton({
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`relative flex items-center gap-3 rounded-lg transition-colors h-10
+      className={`relative flex items-center gap-3 transition-colors h-10
         text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)]
         ${expanded ? "w-full px-3" : "w-10 justify-center"}`}
     >
@@ -151,9 +152,9 @@ function ToggleButton({
         )}
       </svg>
       {expanded && (
-        <span className="text-sm font-medium">Collapse</span>
+        <span className="text-sm font-mono font-medium">{COPY.nav.collapse}</span>
       )}
-      {!expanded && <Tooltip label="Expand menu" visible={hovered} />}
+      {!expanded && <Tooltip label={COPY.nav.expand} visible={hovered} />}
     </button>
   );
 }
@@ -217,7 +218,7 @@ function MobileBottomNav() {
               ${isActive ? "text-[var(--accent-blue)]" : "text-[var(--text-tertiary)]"}`}
           >
             {item.icon}
-            <span className="text-[10px] font-medium">{item.label}</span>
+            <span className="text-[10px] font-mono font-medium">{item.label}</span>
           </button>
         );
       })}

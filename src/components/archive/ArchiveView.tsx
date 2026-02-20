@@ -1,5 +1,6 @@
 import type { Run } from "../../types/runs";
 import { Skeleton } from "../ui/Skeleton";
+import { COPY } from "../../copy";
 
 interface ArchiveViewProps {
   runs: Run[];
@@ -48,41 +49,41 @@ export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) 
             d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
           />
         </svg>
-        <h3 className="text-lg font-medium text-[var(--text-primary)] mb-1">
-          No Archived Runs
+        <h3 className="text-lg font-mono font-medium text-[var(--text-primary)] mb-1">
+          {COPY.archive.emptyTitle}
         </h3>
-        <p className="text-sm">
-          Archived runs will appear here
+        <p className="text-sm font-mono">
+          {COPY.archive.emptyMessage}
         </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-[var(--surface-2)] rounded-lg border border-[var(--border)] overflow-hidden">
+    <div className="bg-[var(--surface-2)] border border-[var(--border)] overflow-hidden">
       <table className="min-w-full divide-y divide-[var(--border)]">
         <thead className="bg-[var(--surface-3)]">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              Title
+            <th className="px-6 py-3 text-left text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
+              {COPY.archive.colTitle}
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              Site
+            <th className="px-6 py-3 text-left text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
+              {COPY.archive.colSite}
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              State
+            <th className="px-6 py-3 text-left text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
+              {COPY.archive.colState}
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              Created
+            <th className="px-6 py-3 text-left text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
+              {COPY.archive.colCreated}
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              Archived
+            <th className="px-6 py-3 text-left text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
+              {COPY.archive.colArchived}
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              Links
+            <th className="px-6 py-3 text-left text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
+              {COPY.archive.colLinks}
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              Actions
+            <th className="px-6 py-3 text-right text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
+              {COPY.archive.colActions}
             </th>
           </tr>
         </thead>
@@ -102,28 +103,28 @@ export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) 
           ) : runs.map((run) => (
             <tr key={run.id} className="hover:bg-[var(--surface-3)]/50">
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-[var(--text-primary)] max-w-xs truncate">
-                  {run.title || "Untitled Run"}
+                <div className="text-sm font-mono font-medium text-[var(--text-primary)] max-w-xs truncate">
+                  {run.title || COPY.archive.untitled}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-[var(--text-secondary)]">
-                  {run.siteName || "Unknown"}
+                <div className="text-sm font-mono text-[var(--text-secondary)]">
+                  {run.siteName || COPY.archive.unknownSite}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span
-                  className={`px-2 py-1 text-xs font-medium rounded-full ${getStateColor(
+                  className={`px-2 py-1 text-xs font-mono font-medium ${getStateColor(
                     run.state
                   )}`}
                 >
-                  {run.state}
+                  {COPY.states[run.state]?.label ?? run.state}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-[var(--text-secondary)]">
                 {formatDate(run.createdAt)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--text-secondary)]">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-[var(--text-secondary)]">
                 {run.archivedAt ? formatDate(run.archivedAt) : "-"}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -133,9 +134,9 @@ export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) 
                       href={run.pullRequestUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[var(--accent-blue)] hover:brightness-125"
+                      className="font-mono text-[var(--accent-blue)] hover:brightness-125"
                     >
-                      PR
+                      {COPY.archive.pr}
                     </a>
                   )}
                   {run.deployPreviewUrl && (
@@ -143,9 +144,9 @@ export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) 
                       href={run.deployPreviewUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[var(--accent-green)] hover:brightness-125"
+                      className="font-mono text-[var(--accent-green)] hover:brightness-125"
                     >
-                      Preview
+                      {COPY.archive.preview}
                     </a>
                   )}
                   {!run.pullRequestUrl && !run.deployPreviewUrl && (
@@ -156,9 +157,9 @@ export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) 
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                 <button
                   onClick={() => onUnarchive(run.id)}
-                  className="text-[var(--accent-blue)] hover:brightness-125 font-medium"
+                  className="font-mono text-[var(--accent-blue)] hover:brightness-125 font-medium"
                 >
-                  Restore
+                  {COPY.archive.restore}
                 </button>
               </td>
             </tr>

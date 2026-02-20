@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 import { useSites } from "../../hooks/useSites";
+import { COPY } from "../../copy";
 
 export function SettingsView() {
   const { sites, toggleSiteSync } = useSites();
 
-  // Sort sites alphabetically by name
   const sortedSites = useMemo(() => {
     return [...sites].sort((a, b) =>
       a.name.toLowerCase().localeCompare(b.name.toLowerCase())
@@ -15,24 +15,23 @@ export function SettingsView() {
 
   return (
     <div className="max-w-2xl">
-      <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-        Sync Settings
+      <h2 className="text-lg font-mono font-semibold text-[var(--text-primary)] mb-4">
+        {COPY.settings.heading}
       </h2>
       <p className="text-sm text-[var(--text-secondary)] mb-6">
-        Enable sites to sync their agent runs. Only enabled sites will be
-        checked for new runs during sync.
+        {COPY.settings.description}
       </p>
 
-      <div className="bg-[var(--surface-2)] rounded-lg border border-[var(--border)] divide-y divide-[var(--border-subtle)]">
-        <div className="px-4 py-3 bg-[var(--surface-3)] rounded-t-lg">
-          <span className="text-sm font-medium text-[var(--text-secondary)]">
-            {enabledCount} of {sites.length} sites enabled
+      <div className="bg-[var(--surface-2)] border border-[var(--border)] divide-y divide-[var(--border-subtle)]">
+        <div className="px-4 py-3 bg-[var(--surface-3)]">
+          <span className="text-sm font-mono font-medium text-[var(--text-secondary)]">
+            {COPY.settings.siteCount(enabledCount, sites.length)}
           </span>
         </div>
 
         {sortedSites.length === 0 ? (
-          <div className="px-4 py-8 text-center text-[var(--text-secondary)]">
-            No sites found. Sites will appear here after loading.
+          <div className="px-4 py-8 text-center font-mono text-[var(--text-secondary)]">
+            {COPY.settings.noSites}
           </div>
         ) : (
           sortedSites.map((site) => (
@@ -41,7 +40,7 @@ export function SettingsView() {
               className="flex items-center justify-between px-4 py-3 hover:bg-[var(--surface-3)]/50"
             >
               <div>
-                <p className="font-medium text-[var(--text-primary)]">{site.name}</p>
+                <p className="font-mono font-medium text-[var(--text-primary)]">{site.name}</p>
                 <p className="text-xs text-[var(--text-tertiary)] font-mono">{site.id}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">

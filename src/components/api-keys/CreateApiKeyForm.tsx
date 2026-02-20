@@ -1,32 +1,33 @@
 import { useState } from "react";
 import { useKanbanStore } from "../../store/kanbanStore";
+import { COPY } from "../../copy";
 
 const SCOPE_OPTIONS = [
   {
     value: "agent_runners:read",
-    label: "Read",
-    description: "List and view runners, sessions, and diffs",
-    risk: "Low",
+    label: COPY.apiKeys.scopeRead,
+    description: COPY.apiKeys.scopeReadDesc,
+    risk: COPY.apiKeys.riskLow,
     riskColor: "text-[var(--accent-green)]",
   },
   {
     value: "agent_runners:write",
-    label: "Write",
-    description: "Create, update, and stop runners and sessions",
-    risk: "Medium",
-    riskColor: "text-yellow-400",
+    label: COPY.apiKeys.scopeWrite,
+    description: COPY.apiKeys.scopeWriteDesc,
+    risk: COPY.apiKeys.riskMed,
+    riskColor: "text-[var(--accent-amber)]",
   },
   {
     value: "agent_runners:deploy",
-    label: "Deploy",
-    description: "Create PRs, commit to branches, redeploy",
-    risk: "High",
+    label: COPY.apiKeys.scopeDeploy,
+    description: COPY.apiKeys.scopeDeployDesc,
+    risk: COPY.apiKeys.riskHigh,
     riskColor: "text-[var(--accent-red)]",
   },
 ] as const;
 
 const EXPIRY_OPTIONS = [
-  { value: "", label: "Never" },
+  { value: "", label: COPY.generic.never },
   { value: "7", label: "7 days" },
   { value: "30", label: "30 days" },
   { value: "90", label: "90 days" },
@@ -87,30 +88,30 @@ export function CreateApiKeyForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-          Key Name
+        <label className="block text-xs font-mono font-medium text-[var(--text-secondary)] mb-1.5">
+          {COPY.apiKeys.keyName}
         </label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. CI Agent Key"
+          placeholder={COPY.apiKeys.keyNamePlaceholder}
           required
-          className="w-full px-3 py-2 text-sm bg-[var(--surface-2)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-blue)]"
+          className="w-full px-3 py-2 text-sm font-mono bg-[var(--surface-2)] border border-[var(--border)] terminal-input text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-blue)]"
         />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-          Site
+        <label className="block text-xs font-mono font-medium text-[var(--text-secondary)] mb-1.5">
+          {COPY.apiKeys.site}
         </label>
         <select
           value={siteId}
           onChange={(e) => setSiteId(e.target.value)}
           required
-          className="w-full px-3 py-2 text-sm bg-[var(--surface-2)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)]"
+          className="w-full px-3 py-2 text-sm font-mono bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)]"
         >
-          <option value="">Select a site...</option>
+          <option value="">{COPY.apiKeys.sitePlaceholder}</option>
           {sites.map((site) => (
             <option key={site.id} value={site.id}>
               {site.name}
@@ -120,8 +121,8 @@ export function CreateApiKeyForm({
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-          Scopes
+        <label className="block text-xs font-mono font-medium text-[var(--text-secondary)] mb-1.5">
+          {COPY.apiKeys.scopes}
         </label>
         <div className="space-y-2">
           {SCOPE_OPTIONS.map((scope) => (
@@ -137,10 +138,10 @@ export function CreateApiKeyForm({
               />
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-[var(--text-primary)]">
+                  <span className="text-sm font-mono text-[var(--text-primary)]">
                     {scope.label}
                   </span>
-                  <span className={`text-[10px] font-medium ${scope.riskColor}`}>
+                  <span className={`text-[10px] font-mono font-medium ${scope.riskColor}`}>
                     {scope.risk}
                   </span>
                 </div>
@@ -154,13 +155,13 @@ export function CreateApiKeyForm({
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-          Expiration
+        <label className="block text-xs font-mono font-medium text-[var(--text-secondary)] mb-1.5">
+          {COPY.apiKeys.expiration}
         </label>
         <select
           value={expiryDays}
           onChange={(e) => setExpiryDays(e.target.value)}
-          className="w-full px-3 py-2 text-sm bg-[var(--surface-2)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)]"
+          className="w-full px-3 py-2 text-sm font-mono bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)]"
         >
           {EXPIRY_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -173,9 +174,9 @@ export function CreateApiKeyForm({
       <button
         type="submit"
         disabled={isSubmitting || !name.trim() || !siteId || scopes.length === 0}
-        className="btn-neon w-full px-4 py-2.5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        className="btn-neon w-full px-4 py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isSubmitting ? "Creating..." : "Create API Key"}
+        {isSubmitting ? COPY.apiKeys.creating : COPY.apiKeys.createSubmit}
       </button>
     </form>
   );

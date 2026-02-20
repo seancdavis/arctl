@@ -1,5 +1,6 @@
 import { useSyncStatus } from "../../hooks/useSyncStatus";
 import { Skeleton } from "../ui/Skeleton";
+import { COPY } from "../../copy";
 
 export function SyncStatus() {
   const { syncState, isSyncing, refresh, formatLastSync, formatNextSync } = useSyncStatus();
@@ -7,9 +8,9 @@ export function SyncStatus() {
   const nextSync = formatNextSync();
 
   return (
-    <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
+    <div className="flex items-center gap-3 text-sm font-mono text-[var(--text-secondary)]">
       <div className="flex items-center gap-1.5">
-        <span className="text-[var(--text-tertiary)]">Last sync:</span>
+        <span className="text-[var(--text-tertiary)]">{COPY.sync.lastSync}</span>
         {syncState ? (
           <span>{formatLastSync()}</span>
         ) : (
@@ -19,7 +20,7 @@ export function SyncStatus() {
 
       {nextSync && (
         <div className="flex items-center gap-1.5">
-          <span className="text-[var(--text-tertiary)]">Next:</span>
+          <span className="text-[var(--text-tertiary)]">{COPY.sync.nextSync}</span>
           <span>{nextSync}</span>
         </div>
       )}
@@ -27,8 +28,8 @@ export function SyncStatus() {
       <button
         onClick={() => refresh(true)}
         disabled={isSyncing}
-        className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-3)] rounded transition-colors disabled:opacity-50"
-        title="Refresh now (resets backoff)"
+        className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-3)] transition-colors disabled:opacity-50"
+        title={COPY.sync.refresh}
       >
         <svg
           className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`}

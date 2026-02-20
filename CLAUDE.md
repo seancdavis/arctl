@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Agent Runner Kanban - A kanban board for managing Netlify Agent Runs across all user sites.
+**arctl** (Agent Runner Controller) — A mission-control kanban board for managing Netlify Agent Runs across all user sites.
 
 ## Skills
 
@@ -50,6 +50,7 @@ netlify/functions/
   sync-trigger.mts   # POST /api/sync/trigger
   sync-worker-background.mts  # Background sync worker
 src/
+  copy.ts            # Centralized UI copy (all user-facing strings)
   api/               # Frontend API clients (runsApi, sitesApi, syncApi, apiKeysApi, fetchWithAuth)
   components/
     api-keys/        # ApiKeyList, CreateApiKeyForm, ApiKeyRevealModal
@@ -99,14 +100,14 @@ All timestamp columns use `timestamp({ withTimezone: true })` to ensure correct 
 Migrations use `prefix: 'timestamp'` in `drizzle.config.ts` to avoid conflicts across parallel branches. The current migration history was reset to a single baseline migration (`20260219173020_ordinary_morlun`) that covers all 8 tables.
 
 ### Kanban Columns
-| Column | State | Description |
-|--------|-------|-------------|
-| New | `NEW` | Freshly created / queued runs |
-| Running | `RUNNING` | Currently executing |
-| Done | `DONE` (no PR) | Completed, needs review |
-| PR Open | `DONE` (has PR, not merged) | PR created and open |
-| PR Merged | `DONE` (PR merged) | PR merged |
-| Error | `ERROR` | Failed runs |
+| Column | Display Title | State | Description |
+|--------|--------------|-------|-------------|
+| new | QUEUED | `NEW` | Freshly created / queued runs |
+| running | IN PROGRESS | `RUNNING` | Currently executing |
+| done | REVIEW | `DONE` (no PR) | Completed, needs review |
+| pr_open | PR OPEN | `DONE` (has PR, not merged) | PR created and open |
+| pr_merged | PR MERGED | `DONE` (PR merged) | PR merged |
+| error | FAULT | `ERROR` | Failed runs |
 
 Column mapping logic is in `src/types/runs.ts` (`getKanbanColumn`). Archived runs are excluded from all columns.
 
@@ -123,11 +124,17 @@ The `?sync=true` query param on `/api/runs/:id` fetches from Netlify API, update
 
 **Sync worker token handling**: The background worker has no session cookie. `sync-trigger.mts` passes the user's `accessToken` in the request body. The worker reads it from the body with a fallback to `NETLIFY_PAT` as a safety net.
 
-### UI Patterns
+### UI Patterns — "Terminal Chic" Aesthetic
+- **Design language**: Hard edges (no `rounded-lg/xl/md`), monospace headings/labels/buttons (`font-mono`), teal accent. Only `rounded-full` on status dots, toggle switches, and loading spinner.
+- **Font**: JetBrains Mono (Google Fonts) for headers, labels, buttons, badges. Body text stays sans-serif.
+- **Color palette**: Netlify Teal `#00C7B7` (primary accent), Phosphor Green `#39FF14`, Amber `#FFB300`, Red `#ff3b5c`. Surface colors: Deep Space Charcoal `#0E1E25` → `#2A4A5A`.
+- **Copy**: All user-facing strings centralized in `src/copy.ts` (import `COPY`). Uses "Handler" voice — operational, concise, slightly sci-fi. Column names: QUEUED, IN PROGRESS, REVIEW, PR OPEN, PR MERGED, FAULT.
+- **btn-neon**: Teal gradient, `font-mono`, `uppercase`, `letter-spacing`.
+- **terminal-input**: CSS class for inputs with left accent border.
 - **Slide-out detail panel**: Clicking a kanban card navigates to `/runs/:id` and opens a right-side panel. Board stays visible (dimmed) behind backdrop. Nested route via `<Outlet />` in KanbanBoard.
-- **Sidebar**: Collapsible desktop sidebar (60px collapsed, ~200px expanded) + mobile bottom nav. Uses CSS custom properties for theming.
-- **Neon accent palette**: Cyan `#00d4ff`, green `#00ff9d`, red `#ff3b5c`. `btn-neon` CSS class for primary action buttons (gradient + glow).
-- **User menu**: Avatar/initials in Header with sign-out dropdown.
+- **Sidebar**: Collapsible desktop sidebar (60px collapsed, ~200px expanded) + mobile bottom nav. Nav labels: "Ops Board", "Cold Storage", "Credentials", "Config".
+- **Kanban cards**: Hard edges, left accent border (`border-l-2`), site name as `[SITE-NAME]` prefix in uppercase mono.
+- **User menu**: Avatar/initials in Header with disconnect dropdown.
 
 ### Environment Variables
 - `NETLIFY_OAUTH_CLIENT_ID` - OAuth app client ID (from app.netlify.com/user/applications)
@@ -195,6 +202,8 @@ npm run db:studio    # Open Drizzle Studio
 - [x] Dev server fixed (`netlify dev` serves both Vite and Functions)
 - [x] Auth flow tested and working with multiple accounts
 - [x] Agent API documentation (`docs/agent-api.md`)
+
+- [x] **arctl rebrand** — "Terminal Chic" aesthetic with JetBrains Mono, teal palette, centralized copy (`src/copy.ts`), hard edges, `[site-name]` card prefixes
 
 ### Not Yet Implemented
 - [ ] Diff viewer for run changes

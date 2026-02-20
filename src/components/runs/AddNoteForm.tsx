@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { addNote } from "../../api/runsApi";
+import { COPY } from "../../copy";
 
 interface AddNoteFormProps {
   runId: string;
@@ -24,7 +25,7 @@ export function AddNoteForm({ runId, onNoteAdded, onCancel }: AddNoteFormProps) 
       setContent("");
       onNoteAdded();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add note");
+      setError(err instanceof Error ? err.message : COPY.addNote.error);
     } finally {
       setIsSubmitting(false);
     }
@@ -33,31 +34,31 @@ export function AddNoteForm({ runId, onNoteAdded, onCancel }: AddNoteFormProps) 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       {error && (
-        <div className="text-red-400 text-xs">{error}</div>
+        <div className="text-[var(--accent-red)] text-xs font-mono">{error}</div>
       )}
 
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Add a note..."
+        placeholder={COPY.addNote.placeholder}
         rows={3}
-        className="w-full bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent resize-none"
+        className="w-full bg-[var(--surface-3)] border border-[var(--border)] terminal-input px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent resize-none"
       />
 
       <div className="flex justify-end gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1.5 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+          className="px-3 py-1.5 text-sm font-mono text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
         >
-          Cancel
+          {COPY.addNote.cancel}
         </button>
         <button
           type="submit"
           disabled={isSubmitting || !content.trim()}
-          className="btn-neon px-3 py-1.5 text-sm rounded-lg disabled:opacity-50"
+          className="btn-neon px-3 py-1.5 text-sm disabled:opacity-50"
         >
-          {isSubmitting ? "Adding..." : "Add Note"}
+          {isSubmitting ? COPY.addNote.submitting : COPY.addNote.submit}
         </button>
       </div>
     </form>

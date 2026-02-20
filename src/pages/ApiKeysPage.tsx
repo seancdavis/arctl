@@ -8,6 +8,7 @@ import {
 import { ApiKeyList } from "../components/api-keys/ApiKeyList";
 import { CreateApiKeyForm } from "../components/api-keys/CreateApiKeyForm";
 import { ApiKeyRevealModal } from "../components/api-keys/ApiKeyRevealModal";
+import { COPY } from "../copy";
 
 export function ApiKeysPage() {
   const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
@@ -65,17 +66,17 @@ export function ApiKeysPage() {
     <div className="max-w-2xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">
-            API Keys
+          <h2 className="text-xl font-mono font-bold text-[var(--text-primary)]">
+            {COPY.apiKeys.heading}
           </h2>
           <p className="text-sm text-[var(--text-tertiary)] mt-1">
-            Scoped keys for agent access to the Netlify Agent Runners API
+            {COPY.apiKeys.description}
           </p>
         </div>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="btn-neon px-4 py-2 rounded-lg text-sm flex items-center gap-2"
+            className="btn-neon px-4 py-2 text-sm flex items-center gap-2"
           >
             <svg
               className="w-4 h-4"
@@ -90,22 +91,22 @@ export function ApiKeysPage() {
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            New Key
+            {COPY.apiKeys.newKey}
           </button>
         )}
       </div>
 
       {error && (
-        <div className="mb-4 bg-[var(--accent-red)]/10 text-[var(--accent-red)] border border-[var(--accent-red)]/20 px-4 py-3 rounded-lg text-sm">
+        <div className="mb-4 bg-[var(--accent-red)]/10 text-[var(--accent-red)] border border-[var(--accent-red)]/20 px-4 py-3 text-sm font-mono">
           {error}
         </div>
       )}
 
       {showForm && (
-        <div className="mb-6 bg-[var(--surface-1)] border border-[var(--border)] rounded-xl p-5">
+        <div className="mb-6 bg-[var(--surface-1)] border border-[var(--border)] p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-              Create API Key
+            <h3 className="text-sm font-mono font-semibold text-[var(--text-primary)]">
+              {COPY.apiKeys.createTitle}
             </h3>
             <button
               onClick={() => setShowForm(false)}

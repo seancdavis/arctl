@@ -3,6 +3,7 @@ import { useKanbanStore } from "../../store/kanbanStore";
 import { useAuth } from "../../lib/auth";
 import { SyncStatus } from "../sync/SyncStatus";
 import { SiteFilter } from "../kanban/SiteFilter";
+import { COPY } from "../../copy";
 
 function UserMenu() {
   const { user, logout } = useAuth();
@@ -36,7 +37,7 @@ function UserMenu() {
         onClick={() => setOpen(!open)}
         aria-label="User menu"
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-[var(--surface-2)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-cyan)]"
+        className="flex items-center gap-2 px-2 py-1.5 transition-colors hover:bg-[var(--surface-2)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
       >
         {user.avatarUrl ? (
           <img
@@ -52,7 +53,7 @@ function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-48 bg-[var(--surface-2)] border border-[var(--border)] rounded-lg shadow-xl shadow-black/40 z-50 py-1">
+        <div className="absolute right-0 top-full mt-1 w-48 bg-[var(--surface-2)] border border-[var(--border)] shadow-xl shadow-black/40 z-50 py-1">
           <div className="px-3 py-2 border-b border-[var(--border)]">
             <p className="text-sm font-medium text-[var(--text-primary)] truncate">
               {user.fullName || user.email}
@@ -68,9 +69,9 @@ function UserMenu() {
               setOpen(false);
               logout();
             }}
-            className="w-full text-left px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-3)] transition-colors"
+            className="w-full text-left px-3 py-2 text-sm font-mono text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-3)] transition-colors"
           >
-            Sign out
+            {COPY.auth.signOut}
           </button>
         </div>
       )}
@@ -85,8 +86,8 @@ export function Header() {
     <header className="bg-[var(--surface-1)] border-b border-[var(--border)] px-4 md:px-6 py-3 md:py-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-lg md:text-xl font-bold text-[var(--text-primary)] truncate">
-            Agent Runner Kanban
+          <h1 className="font-mono text-lg md:text-xl font-bold text-[var(--accent-blue)] truncate">
+            {COPY.brand.logo}
           </h1>
           <SiteFilter />
         </div>
@@ -97,7 +98,7 @@ export function Header() {
           </div>
           <button
             onClick={openCreateModal}
-            className="btn-neon px-3 md:px-4 py-2 rounded-lg flex items-center gap-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-cyan)]"
+            className="btn-neon px-3 md:px-4 py-2 flex items-center gap-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
           >
             <svg
               className="w-5 h-5"
@@ -112,7 +113,7 @@ export function Header() {
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            <span className="hidden sm:inline">New Run</span>
+            <span className="hidden sm:inline">{COPY.board.newRun}</span>
           </button>
           <UserMenu />
         </div>

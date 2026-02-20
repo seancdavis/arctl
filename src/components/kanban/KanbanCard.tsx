@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import type { Run } from "../../types/runs";
+import { COPY } from "../../copy";
 
 interface KanbanCardProps {
   run: Run;
@@ -21,17 +22,17 @@ export function KanbanCard({ run }: KanbanCardProps) {
   return (
     <div
       onClick={() => navigate(`/runs/${run.id}`)}
-      className="bg-[var(--surface-2)] rounded-lg border border-[var(--border)] p-3 cursor-pointer hover:border-[var(--accent-blue)]/50 hover:bg-[var(--surface-2)]/80 transition-colors"
+      className="bg-[var(--surface-2)] border border-[var(--border)] border-l-2 border-l-[var(--accent-blue)] p-3 cursor-pointer hover:border-[var(--accent-blue)]/50 hover:bg-[var(--surface-2)]/80 transition-colors"
     >
-      <div className="text-xs text-[var(--accent-blue)] truncate mb-1">
-        {run.siteName || "Unknown Site"}
+      <div className="text-xs font-mono uppercase text-[var(--accent-blue)] truncate mb-1">
+        [{run.siteName || COPY.board.unknownSite}]
       </div>
-      <h3 className="font-medium text-[var(--text-primary)] text-sm line-clamp-2 mb-2">
-        {run.title || "Untitled Run"}
+      <h3 className="font-mono font-medium text-[var(--text-primary)] text-sm line-clamp-2 mb-2">
+        {run.title || COPY.board.untitledRun}
       </h3>
 
       {run.branch && (
-        <div className="flex items-center gap-1 text-xs text-[var(--text-secondary)] mb-2">
+        <div className="flex items-center gap-1 text-xs font-mono text-[var(--text-secondary)] mb-2">
           <svg
             className="w-3 h-3 flex-shrink-0"
             fill="none"
@@ -50,7 +51,7 @@ export function KanbanCard({ run }: KanbanCardProps) {
       )}
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-[var(--text-tertiary)]">
+        <span className="text-xs font-mono text-[var(--text-tertiary)]">
           {formatDate(run.createdAt)}
         </span>
         <div className="flex items-center gap-1.5">
@@ -65,16 +66,16 @@ export function KanbanCard({ run }: KanbanCardProps) {
               }`}
               title={
                 run.prCheckStatus === "success"
-                  ? "Checks passing"
+                  ? COPY.card.checksPass
                   : run.prCheckStatus === "failure"
-                  ? "Checks failing"
-                  : "Checks running"
+                  ? COPY.card.checksFail
+                  : COPY.card.checksRunning
               }
             />
           )}
           {run.pullRequestUrl && run.prNeedsUpdate && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">
-              PR outdated
+            <span className="text-[10px] font-mono px-1.5 py-0.5 bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] font-medium">
+              {COPY.card.prOutdated}
             </span>
           )}
         </div>

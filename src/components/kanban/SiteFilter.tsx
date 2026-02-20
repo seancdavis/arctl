@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useKanbanStore } from "../../store/kanbanStore";
+import { COPY } from "../../copy";
 
 export function SiteFilter() {
   const runs = useKanbanStore((s) => s.runs);
@@ -10,7 +11,7 @@ export function SiteFilter() {
     const map = new Map<string, string>();
     for (const run of runs) {
       if (!map.has(run.siteId)) {
-        map.set(run.siteId, run.siteName || "Unknown Site");
+        map.set(run.siteId, run.siteName || COPY.board.unknownSite);
       }
     }
     return [...map.entries()]
@@ -25,10 +26,10 @@ export function SiteFilter() {
       <select
         value={filterSiteId || ""}
         onChange={(e) => setFilterSiteId(e.target.value || null)}
-        aria-label="Filter by site"
-        className="bg-[var(--surface-3)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent"
+        aria-label={COPY.board.filterLabel}
+        className="bg-[var(--surface-3)] border border-[var(--border)] px-2 py-1.5 text-sm font-mono text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:border-transparent"
       >
-        <option value="">All Sites</option>
+        <option value="">{COPY.board.allSites}</option>
         {sitesInUse.map((site) => (
           <option key={site.id} value={site.id}>
             {site.name}
@@ -38,8 +39,8 @@ export function SiteFilter() {
       {filterSiteId && (
         <button
           onClick={() => setFilterSiteId(null)}
-          className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-3)] rounded transition-colors"
-          aria-label="Clear site filter"
+          className="p-1 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-3)] transition-colors"
+          aria-label={COPY.board.clearFilter}
         >
           <svg
             className="w-3.5 h-3.5"
