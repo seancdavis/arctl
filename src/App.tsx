@@ -4,6 +4,7 @@ import { useKanbanStore } from "./store/kanbanStore";
 import { useRuns } from "./hooks/useRuns";
 import { useSyncStatus } from "./hooks/useSyncStatus";
 import { useActiveRunPolling } from "./hooks/useActiveRunPolling";
+import { useAuth } from "./lib/auth";
 import { Header } from "./components/layout/Header";
 import { Sidebar } from "./components/layout/Sidebar";
 import { KanbanBoard } from "./components/kanban/KanbanBoard";
@@ -11,8 +12,33 @@ import { ArchiveView } from "./components/archive/ArchiveView";
 import { SettingsView } from "./components/settings/SettingsView";
 import { CreateRunModal } from "./components/runs/CreateRunModal";
 import { RunDetailPanel } from "./components/runs/RunDetailPanel";
+import { LoginPage } from "./pages/LoginPage";
+import { ComingSoonPage } from "./pages/ComingSoonPage";
+import { ApiKeysPage } from "./pages/ApiKeysPage";
 
-function App() {
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { status } = useAuth();
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-[var(--surface-0)] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[var(--accent-blue)] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return <LoginPage />;
+  }
+
+  if (status === "not_allowed") {
+    return <ComingSoonPage />;
+  }
+
+  return <>{children}</>;
+}
+
+function AuthenticatedApp() {
   const {
     isCreateModalOpen,
     closeCreateModal,
@@ -90,6 +116,7 @@ function App() {
               }
             />
             <Route path="/settings" element={<SettingsView />} />
+            <Route path="/api-keys" element={<ApiKeysPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
@@ -101,6 +128,14 @@ function App() {
         />
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthGate>
+      <AuthenticatedApp />
+    </AuthGate>
   );
 }
 

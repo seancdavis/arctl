@@ -1,4 +1,5 @@
 import type { SyncState } from "../types/runs";
+import { fetchWithAuth } from "./fetchWithAuth";
 
 const API_BASE = "/api";
 
@@ -11,7 +12,7 @@ export async function triggerSync(reset = false): Promise<SyncTriggerResponse> {
   const url = reset
     ? `${API_BASE}/sync/trigger?reset=true`
     : `${API_BASE}/sync/trigger`;
-  const res = await fetch(url, { method: "POST" });
+  const res = await fetchWithAuth(url, { method: "POST" });
   if (!res.ok) {
     throw new Error(`Failed to trigger sync: ${res.statusText}`);
   }

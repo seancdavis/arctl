@@ -65,15 +65,16 @@ export function CreateRunModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="create-run-title">
       <div className="bg-[var(--surface-2)] rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-[var(--border)]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+          <h2 id="create-run-title" className="text-lg font-semibold text-[var(--text-primary)]">
             Create New Run
           </h2>
           <button
             onClick={onClose}
-            className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+            aria-label="Close"
+            className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-cyan)] rounded"
           >
             <svg
               className="w-5 h-5"

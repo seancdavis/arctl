@@ -2,15 +2,20 @@ import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { syncState } from "../../db/schema.ts";
 import { eq } from "drizzle-orm";
+import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
   console.log("[sync-trigger] Received request", { method: req.method });
 
   if (req.method !== "POST" && req.method !== "GET") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ error: "Method not allowed" }, { status: 405 });
+  }
+
+  let auth;
+  try {
+    auth = await requireAuth(req);
+  } catch (err) {
+    return handleAuthError(err);
   }
 
   const url = new URL(req.url);
@@ -36,13 +41,29 @@ export default async (req: Request, context: Context) => {
       .where(eq(syncState.id, 1));
   }
 
-  // Trigger the background sync worker
+  // Read accessToken from body if present (from internal calls),
+  // otherwise use the auth token
+  let accessToken = auth.accessToken;
+  if (req.method === "POST") {
+    try {
+      const body = await req.clone().json();
+      if (body.accessToken) {
+        accessToken = body.accessToken;
+      }
+    } catch {
+      // No body or not JSON — use auth token
+    }
+  }
+
+  // Trigger the background sync worker — pass accessToken in body
   const siteUrl = new URL(req.url).origin;
 
   console.log("[sync-trigger] Triggering background worker at", siteUrl);
   try {
     await fetch(`${siteUrl}/api/sync/worker`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessToken }),
     });
     console.log("[sync-trigger] Background worker triggered successfully");
   } catch (error) {
@@ -53,13 +74,10 @@ export default async (req: Request, context: Context) => {
   const [state] = await db.select().from(syncState).where(eq(syncState.id, 1));
   console.log("[sync-trigger] Current sync state:", state);
 
-  return new Response(
-    JSON.stringify({
-      message: "Sync triggered",
-      sync_state: state,
-    }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+  return Response.json({
+    message: "Sync triggered",
+    sync_state: state,
+  });
 };
 
 export const config: Config = {

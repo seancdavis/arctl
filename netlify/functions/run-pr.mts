@@ -1,42 +1,30 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { runs } from "../../db/schema.ts";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ error: "Method not allowed" }, { status: 405 });
   }
 
-  const url = new URL(req.url);
-  // Path: /api/runs/:id/pull-request
-  const pathParts = url.pathname.split("/");
-  const runId = pathParts[pathParts.length - 2];
+  let auth;
+  try {
+    auth = await requireAuth(req);
+  } catch (err) {
+    return handleAuthError(err);
+  }
+
+  const { id: runId } = context.params;
 
   if (!runId) {
-    return new Response(JSON.stringify({ error: "Run ID required" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ error: "Run ID required" }, { status: 400 });
   }
 
-  const [run] = await db.select().from(runs).where(eq(runs.id, runId));
+  const [run] = await db.select().from(runs).where(and(eq(runs.id, runId), eq(runs.userId, auth.userId)));
   if (!run) {
-    return new Response(JSON.stringify({ error: "Run not found" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  const pat = Netlify.env.get("NETLIFY_PAT");
-  if (!pat) {
-    return new Response(
-      JSON.stringify({ error: "NETLIFY_PAT not configured" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return Response.json({ error: "Run not found" }, { status: 404 });
   }
 
   // Check if this is an update action
@@ -50,22 +38,16 @@ export default async (req: Request, context: Context) => {
   if (body.action === "update") {
     // --- Update PR: commit to existing PR branch ---
     if (!run.pullRequestUrl) {
-      return new Response(
-        JSON.stringify({ error: "No PR exists to update" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return Response.json({ error: "No PR exists to update" }, { status: 400 });
     }
     if (!run.pullRequestBranch) {
-      return new Response(
-        JSON.stringify({ error: "PR branch not known — try syncing the run first" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+      return Response.json(
+        { error: "PR branch not known — try syncing the run first" },
+        { status: 400 }
       );
     }
     if (run.pullRequestState !== "open" && run.pullRequestState !== "draft") {
-      return new Response(
-        JSON.stringify({ error: "PR is not open or draft" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return Response.json({ error: "PR is not open or draft" }, { status: 400 });
     }
 
     const commitRes = await fetch(
@@ -73,7 +55,7 @@ export default async (req: Request, context: Context) => {
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${pat}`,
+          Authorization: `Bearer ${auth.accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ target_branch: run.pullRequestBranch }),
@@ -82,16 +64,16 @@ export default async (req: Request, context: Context) => {
 
     if (!commitRes.ok) {
       const error = await commitRes.text();
-      return new Response(
-        JSON.stringify({ error: `Failed to update PR: ${error}` }),
-        { status: commitRes.status, headers: { "Content-Type": "application/json" } }
+      return Response.json(
+        { error: `Failed to update PR: ${error}` },
+        { status: commitRes.status }
       );
     }
 
     // Re-sync the run from API to get fresh state
     const syncRes = await fetch(
       `https://api.netlify.com/api/v1/agent_runners/${runId}`,
-      { headers: { Authorization: `Bearer ${pat}` } }
+      { headers: { Authorization: `Bearer ${auth.accessToken}` } }
     );
     if (syncRes.ok) {
       const netlifyRun = await syncRes.json();
@@ -111,7 +93,6 @@ export default async (req: Request, context: Context) => {
         })
         .where(eq(runs.id, runId));
     } else {
-      // Even if re-sync fails, mark the commit as done
       const now = new Date();
       await db
         .update(runs)
@@ -120,26 +101,21 @@ export default async (req: Request, context: Context) => {
     }
 
     const [updatedRun] = await db.select().from(runs).where(eq(runs.id, runId));
-    return new Response(JSON.stringify(updatedRun), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json(updatedRun);
   }
 
   // --- Create PR (default) ---
   if (run.state !== "DONE") {
-    return new Response(
-      JSON.stringify({ error: "Run must be completed before creating PR" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+    return Response.json(
+      { error: "Run must be completed before creating PR" },
+      { status: 400 }
     );
   }
 
   if (run.pullRequestUrl) {
-    return new Response(
-      JSON.stringify({
-        error: "PR already exists",
-        pull_request_url: run.pullRequestUrl,
-      }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+    return Response.json(
+      { error: "PR already exists", pull_request_url: run.pullRequestUrl },
+      { status: 400 }
     );
   }
 
@@ -148,7 +124,7 @@ export default async (req: Request, context: Context) => {
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${pat}`,
+        Authorization: `Bearer ${auth.accessToken}`,
         "Content-Type": "application/json",
       },
     }
@@ -156,9 +132,9 @@ export default async (req: Request, context: Context) => {
 
   if (!createRes.ok) {
     const error = await createRes.text();
-    return new Response(
-      JSON.stringify({ error: `Failed to create PR: ${error}` }),
-      { status: createRes.status, headers: { "Content-Type": "application/json" } }
+    return Response.json(
+      { error: `Failed to create PR: ${error}` },
+      { status: createRes.status }
     );
   }
 
@@ -178,10 +154,7 @@ export default async (req: Request, context: Context) => {
     .where(eq(runs.id, runId));
 
   const [updatedRun] = await db.select().from(runs).where(eq(runs.id, runId));
-
-  return new Response(JSON.stringify(updatedRun), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return Response.json(updatedRun);
 };
 
 export const config: Config = {
