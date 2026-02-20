@@ -3,6 +3,7 @@ import { db } from "../../db/index.ts";
 import { runs, sessions } from "../../db/schema.ts";
 import { eq, and, asc } from "drizzle-orm";
 import { requireAuth, handleAuthError } from "./_shared/auth.mts";
+import { maybeSync } from "./_shared/maybeSync.mts";
 
 export default async (req: Request, context: Context) => {
   let auth;
@@ -91,17 +92,9 @@ export default async (req: Request, context: Context) => {
     }
     await db.update(runs).set(runUpdates).where(eq(runs.id, runId));
 
-    // Trigger sync — pass accessToken for background worker
-    const siteUrl = new URL(req.url).origin;
-    try {
-      await fetch(`${siteUrl}/api/sync/trigger`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accessToken: auth.accessToken }),
-      });
-    } catch (e) {
-      console.error("Failed to trigger sync:", e);
-    }
+    // Force sync so the board picks up the new session quickly
+    const origin = new URL(req.url).origin;
+    maybeSync({ origin, accessToken: auth.accessToken, force: true });
 
     const [session] = await db
       .select()

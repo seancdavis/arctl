@@ -3,6 +3,7 @@ import { db } from "../../db/index.ts";
 import { runs, sessions, notes } from "../../db/schema.ts";
 import { eq, and, asc } from "drizzle-orm";
 import { requireAuth, handleAuthError } from "./_shared/auth.mts";
+import { maybeSync } from "./_shared/maybeSync.mts";
 
 export default async (req: Request, context: Context) => {
   let auth;
@@ -102,6 +103,12 @@ export default async (req: Request, context: Context) => {
       } catch (e) {
         console.error(`[run] Failed to sync run ${runId} from Netlify API:`, e);
       }
+    }
+
+    // SWR: if not doing a direct sync, trigger background sync if stale
+    if (!shouldSync) {
+      const origin = new URL(req.url).origin;
+      maybeSync({ origin, accessToken: auth.accessToken });
     }
 
     const [run] = await db.select().from(runs).where(and(eq(runs.id, runId), eq(runs.userId, auth.userId)));

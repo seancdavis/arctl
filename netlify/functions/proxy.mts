@@ -4,6 +4,7 @@ import { db } from "../../db/index.ts";
 import { apiKeys, users, auditLog } from "../../db/schema.ts";
 import { eq } from "drizzle-orm";
 import { resolveScope, hasScope } from "./_shared/scopes.mts";
+import { maybeSync } from "./_shared/maybeSync.mts";
 
 const NETLIFY_API_BASE = "https://api.netlify.com/api/v1";
 
@@ -196,7 +197,14 @@ export default async (request: Request, _context: Context) => {
     keyRecord.keyPrefix
   );
 
-  // 13. Return Netlify API response
+  // 13. Trigger background sync after successful mutations
+  const isMutation = request.method !== "GET" && request.method !== "HEAD";
+  if (isMutation && netlifyRes.ok) {
+    const origin = new URL(request.url).origin;
+    maybeSync({ origin, accessToken: user.accessToken, force: true });
+  }
+
+  // 14. Return Netlify API response
   const responseBody = await netlifyRes.text();
   return new Response(responseBody, {
     status: netlifyRes.status,

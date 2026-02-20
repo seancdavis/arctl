@@ -3,6 +3,7 @@ import { db } from "../../db/index.ts";
 import { runs } from "../../db/schema.ts";
 import { eq, and, isNull, isNotNull, desc } from "drizzle-orm";
 import { requireAuth, handleAuthError } from "./_shared/auth.mts";
+import { maybeSync } from "./_shared/maybeSync.mts";
 
 export default async (req: Request, context: Context) => {
   console.log(`[runs] ${req.method} ${req.url}`);
@@ -32,6 +33,11 @@ export default async (req: Request, context: Context) => {
           .orderBy(desc(runs.createdAt));
 
     console.log(`[runs] GET returning ${result.length} runs`);
+
+    // SWR: return stale data immediately, trigger background sync if needed
+    const origin = new URL(req.url).origin;
+    maybeSync({ origin, accessToken: auth.accessToken });
+
     return Response.json(result);
   }
 
@@ -95,17 +101,9 @@ export default async (req: Request, context: Context) => {
       userId: auth.userId,
     });
 
-    // Trigger sync — pass accessToken so background worker can use it
-    const siteUrl = new URL(req.url).origin;
-    try {
-      await fetch(`${siteUrl}/api/sync/trigger`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accessToken: auth.accessToken }),
-      });
-    } catch (e) {
-      console.error("Failed to trigger sync:", e);
-    }
+    // Force sync so the board picks up the new run quickly
+    const origin = new URL(req.url).origin;
+    maybeSync({ origin, accessToken: auth.accessToken, force: true });
 
     const [run] = await db.select().from(runs).where(eq(runs.id, netlifyRun.id));
     console.log(`[runs] Created run ${run.id} (${run.state})`);

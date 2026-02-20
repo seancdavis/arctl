@@ -403,3 +403,9 @@ All errors return JSON with an `error` field:
 | 405 | Method not allowed |
 | 422 | Validation error |
 | 500 | Server error |
+
+## Data Freshness
+
+- **Proxy responses are always live** — they come directly from the Netlify API, not from a cache. When you `GET /agent_runners/{runner_id}`, you get the current state from Netlify.
+- **The kanban board syncs asynchronously** — after any write operation (POST, PATCH, DELETE), a background sync is triggered automatically so the board reflects changes within ~30 seconds.
+- **Polling is recommended** — when waiting for a runner to complete, poll `GET /agent_runners/{runner_id}` every 15-30 seconds. Responses are live from the Netlify API, so you always see the latest state.
