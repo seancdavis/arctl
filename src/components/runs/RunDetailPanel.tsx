@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useKanbanStore } from "../../store/kanbanStore";
-import { fetchRun, syncRun, fetchPrStatus, type RunWithSessions } from "../../api/runsApi";
+import { fetchRun, syncRun, fetchPrStatus, fetchSessionDiff, type RunWithSessions } from "../../api/runsApi";
 import type { Run, Session, Note, PrStatus, PrCheckRun } from "../../types/runs";
 import { AddSessionForm } from "./AddSessionForm";
 import { AddNoteForm } from "./AddNoteForm";
@@ -12,6 +12,7 @@ interface RunDetailPanelProps {
   onArchive: (id: string) => void;
   onCreatePR: (id: string) => void;
   onUpdatePR: (id: string) => void;
+  onMergePR: (id: string) => void;
   onAddSession: (runId: string, prompt: string) => Promise<void>;
 }
 
@@ -34,27 +35,63 @@ function formatDate(dateString: string) {
 
 const PROMPT_COLLAPSE_LENGTH = 200;
 
-function SessionCard({ session, prCommittedAt }: { session: Session; prCommittedAt: string | null }) {
-  const [expanded, setExpanded] = useState(false);
+function SessionCard({ session, prCommittedAt, runId }: { session: Session; prCommittedAt: string | null; runId: string }) {
+  const [promptExpanded, setPromptExpanded] = useState(false);
+  const [resultExpanded, setResultExpanded] = useState(false);
+  const [diffVisible, setDiffVisible] = useState(false);
+  const [diffContent, setDiffContent] = useState<string | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
   const prompt = session.prompt || "";
   const isLong = prompt.length > PROMPT_COLLAPSE_LENGTH;
 
   const isUncommitted = prCommittedAt && new Date(session.createdAt) > new Date(prCommittedAt);
 
+  const handleViewDiff = async () => {
+    if (diffVisible) {
+      setDiffVisible(false);
+      return;
+    }
+    if (diffContent !== null) {
+      setDiffVisible(true);
+      return;
+    }
+    setDiffLoading(true);
+    try {
+      const data = await fetchSessionDiff(runId, session.id);
+      setDiffContent(data.diff);
+      setDiffVisible(true);
+    } catch {
+      setDiffContent(null);
+    } finally {
+      setDiffLoading(false);
+    }
+  };
+
   return (
     <div className={`bg-[var(--surface-3)] px-3 py-2.5 text-sm ${isUncommitted ? "border border-[var(--accent-amber)]/30" : ""}`}>
+      {/* Header row */}
       <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          <span className="text-[var(--text-tertiary)] text-xs font-mono">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[var(--text-tertiary)] text-xs font-mono flex-shrink-0">
             {formatDate(session.createdAt)}
           </span>
+          {session.mode && session.mode !== "normal" && (
+            <span className="text-[10px] font-mono px-1.5 py-0.5 bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] font-medium uppercase flex-shrink-0">
+              {session.mode}
+            </span>
+          )}
           {isUncommitted && (
-            <span className="text-[10px] font-mono px-1.5 py-0.5 bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] font-medium">
+            <span className="text-[10px] font-mono px-1.5 py-0.5 bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] font-medium flex-shrink-0">
               {COPY.detail.notInPr}
             </span>
           )}
+          {session.duration != null && (
+            <span className="text-[var(--text-tertiary)] text-xs font-mono flex-shrink-0">
+              {COPY.session.duration(session.duration)}
+            </span>
+          )}
         </div>
-        <span className={`text-xs font-mono px-1.5 py-0.5 ${
+        <span className={`text-xs font-mono px-1.5 py-0.5 flex-shrink-0 ${
           session.state === "completed" || session.state === "done"
             ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)]"
             : session.state === "running"
@@ -66,18 +103,74 @@ function SessionCard({ session, prCommittedAt }: { session: Session; prCommitted
           {session.state}
         </span>
       </div>
+
+      {/* Title */}
+      {session.title && (
+        <p className="text-[var(--text-primary)] font-mono text-xs font-medium mb-1">
+          {session.title}
+        </p>
+      )}
+
+      {/* Prompt */}
       {prompt && (
         <div>
-          <p className={`text-[var(--text-secondary)] whitespace-pre-wrap break-words ${!expanded && isLong ? "line-clamp-3" : ""}`}>
+          <p className={`text-[var(--text-secondary)] whitespace-pre-wrap break-words ${!promptExpanded && isLong ? "line-clamp-3" : ""}`}>
             {prompt}
           </p>
           {isLong && (
             <button
-              onClick={() => setExpanded(!expanded)}
+              onClick={() => setPromptExpanded(!promptExpanded)}
               className="text-xs font-mono text-[var(--accent-blue)] hover:brightness-125 mt-1"
             >
-              {expanded ? COPY.detail.showLess : COPY.detail.showMore}
+              {promptExpanded ? COPY.detail.showLess : COPY.detail.showMore}
             </button>
+          )}
+        </div>
+      )}
+
+      {/* Result summary */}
+      {session.result && (
+        <div className="mt-2 border-t border-[var(--border)] pt-2">
+          <button
+            onClick={() => setResultExpanded(!resultExpanded)}
+            className="flex items-center gap-1.5 text-xs font-mono text-[var(--accent-blue)] hover:brightness-125"
+          >
+            <svg className={`w-3 h-3 transition-transform ${resultExpanded ? "rotate-90" : ""}`} fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+            </svg>
+            {resultExpanded ? COPY.session.hideResult : COPY.session.result}
+          </button>
+          {resultExpanded && (
+            <p className="mt-1.5 text-[var(--text-secondary)] text-xs whitespace-pre-wrap break-words">
+              {session.result}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* View diff button */}
+      {session.hasResultDiff && (
+        <div className="mt-2">
+          <button
+            onClick={handleViewDiff}
+            disabled={diffLoading}
+            className="text-xs font-mono text-[var(--accent-green)] hover:brightness-125 disabled:opacity-50"
+          >
+            {diffLoading
+              ? COPY.session.loadingDiff
+              : diffVisible
+              ? COPY.session.hideDiff
+              : COPY.session.viewDiff}
+          </button>
+          {diffVisible && diffContent && (
+            <pre className="mt-2 p-3 bg-[var(--surface-1)] text-[var(--text-secondary)] text-xs font-mono overflow-x-auto max-h-80 overflow-y-auto border border-[var(--border)] whitespace-pre">
+              {diffContent}
+            </pre>
+          )}
+          {diffVisible && diffContent === null && !diffLoading && (
+            <p className="mt-1 text-xs font-mono text-[var(--text-tertiary)]">
+              {COPY.session.noDiff}
+            </p>
           )}
         </div>
       )}
@@ -108,13 +201,39 @@ function CheckIcon({ conclusion, status }: { conclusion: string | null; status: 
   );
 }
 
-function PrStatusSection({ runId, hasPr }: { runId: string; hasPr: boolean }) {
+function PrStatusSection({
+  runId,
+  hasPr,
+  pullRequestState,
+  onMergePR,
+}: {
+  runId: string;
+  hasPr: boolean;
+  pullRequestState: string | null;
+  onMergePR: (id: string) => void;
+}) {
   const updateStoreRun = useKanbanStore((s) => s.updateRun);
   const [prStatus, setPrStatus] = useState<PrStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checksExpanded, setChecksExpanded] = useState(false);
+  const [mergeAction, setMergeAction] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [mergeError, setMergeError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const handleMerge = async () => {
+    setMergeAction("loading");
+    setMergeError(null);
+    try {
+      await onMergePR(runId);
+      setMergeAction("success");
+      setTimeout(() => setMergeAction("idle"), 2000);
+    } catch (err) {
+      setMergeError(err instanceof Error ? err.message : COPY.detail.failedMergePr);
+      setMergeAction("error");
+      setTimeout(() => { setMergeAction("idle"); setMergeError(null); }, 4000);
+    }
+  };
 
   useEffect(() => {
     if (!hasPr) return;
@@ -318,6 +437,43 @@ function PrStatusSection({ runId, hasPr }: { runId: string; hasPr: boolean }) {
           )}
         </div>
       )}
+
+      {pullRequestState === "open" && (
+        <div className="space-y-1.5">
+          {mergeAction === "error" && mergeError && (
+            <div className="text-xs font-mono text-[var(--accent-red)] bg-[var(--accent-red)]/10 px-3 py-1.5">
+              {mergeError}
+            </div>
+          )}
+          <button
+            onClick={handleMerge}
+            disabled={
+              mergeAction === "loading" ||
+              mergeAction === "success" ||
+              (overallCheckStatus !== null && overallCheckStatus !== "success") ||
+              mergeable === false
+            }
+            className={`w-full px-4 py-2 text-sm font-mono uppercase tracking-wider transition-colors disabled:opacity-50 ${
+              mergeAction === "success"
+                ? "border border-[var(--accent-green)]/40 text-[var(--accent-green)] bg-[var(--accent-green)]/10"
+                : "btn-neon"
+            }`}
+            title={
+              mergeable === false
+                ? COPY.detail.mergeDisabledConflicts
+                : overallCheckStatus !== null && overallCheckStatus !== "success"
+                ? COPY.detail.mergeDisabledChecks
+                : undefined
+            }
+          >
+            {mergeAction === "loading"
+              ? COPY.detail.mergingPr
+              : mergeAction === "success"
+              ? COPY.detail.prMerged
+              : COPY.detail.mergePr}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -326,6 +482,7 @@ export function RunDetailPanel({
   onArchive,
   onCreatePR,
   onUpdatePR,
+  onMergePR,
   onAddSession,
 }: RunDetailPanelProps) {
   const { id } = useParams<{ id: string }>();
@@ -612,7 +769,18 @@ export function RunDetailPanel({
               )}
 
               {/* PR Status */}
-              <PrStatusSection runId={run.id} hasPr={!!run.pullRequestUrl} />
+              <PrStatusSection
+                runId={run.id}
+                hasPr={!!run.pullRequestUrl}
+                pullRequestState={run.pullRequestState}
+                onMergePR={async (id) => {
+                  await onMergePR(id);
+                  const data = await fetchRun(id);
+                  setRun(data);
+                  setSessions(data.sessions || []);
+                  setRunNotes(data.notes || []);
+                }}
+              />
 
               {/* Sessions */}
               <div className="space-y-2">
@@ -626,7 +794,7 @@ export function RunDetailPanel({
                 ) : (
                   <div className="space-y-2">
                     {sessions.map((session) => (
-                      <SessionCard key={session.id} session={session} prCommittedAt={run.prCommittedAt} />
+                      <SessionCard key={session.id} session={session} prCommittedAt={run.prCommittedAt} runId={run.id} />
                     ))}
                   </div>
                 )}

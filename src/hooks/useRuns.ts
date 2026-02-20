@@ -8,6 +8,7 @@ import {
   addSession as apiAddSession,
   createPullRequest as apiCreatePullRequest,
   updatePullRequest as apiUpdatePullRequest,
+  mergePullRequest as apiMergePullRequest,
 } from "../api/runsApi";
 import type { CreateRunRequest } from "../types/runs";
 
@@ -98,6 +99,15 @@ export function useRuns() {
     [updateRun]
   );
 
+  const mergePullRequest = useCallback(
+    async (runId: string) => {
+      const run = await apiMergePullRequest(runId);
+      updateRun(run);
+      return run;
+    },
+    [updateRun]
+  );
+
   useEffect(() => {
     loadRuns();
   }, [loadRuns]);
@@ -114,5 +124,6 @@ export function useRuns() {
     addSession,
     createPullRequest,
     updatePullRequest,
+    mergePullRequest,
   };
 }
