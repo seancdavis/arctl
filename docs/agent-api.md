@@ -65,7 +65,7 @@ curl -H "Authorization: Bearer oc_abc123..." \
   https://<your-app>.netlify.app/api/proxy/agent_runners
 ```
 
-**Response:** Array of runner objects.
+**Response:** Array of runner objects. Runners with a `pr_url` are enriched with additional PR status fields (see [PR Status Enrichment](#pr-status-enrichment)).
 
 ```json
 [
@@ -75,14 +75,18 @@ curl -H "Authorization: Bearer oc_abc123..." \
     "state": "done",
     "title": "Add contact form to homepage",
     "branch": "main",
-    "pr_url": null,
-    "pr_state": null,
+    "pr_url": "https://github.com/owner/repo/pull/42",
+    "pr_state": "open",
     "has_result_diff": true,
     "current_task": null,
     "created_at": "2026-01-24T13:02:09.924Z",
     "updated_at": "2026-01-24T13:04:33.231Z",
     "latest_session_state": "done",
-    "latest_session_deploy_url": "https://agent-runner-id--site-name.netlify.app"
+    "latest_session_deploy_url": "https://agent-runner-id--site-name.netlify.app",
+    "pr_mergeable": true,
+    "pr_behind_by": 0,
+    "pr_review_state": "approved",
+    "pr_checks_status": "success"
   }
 ]
 ```
@@ -385,6 +389,30 @@ curl -X POST \
 ```
 
 Use the `pr_branch` value from step 5's response as the `target_branch`.
+
+### 7. Check PR status
+
+After creating a PR, the runner GET endpoints automatically include PR status fields. No additional calls are needed — just fetch the runner:
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+  $BASE_URL/agent_runners/$RUNNER_ID
+```
+
+The response includes `pr_mergeable`, `pr_behind_by`, `pr_review_state`, and `pr_checks_status` alongside the standard runner fields.
+
+## PR Status Enrichment
+
+When a runner has a `pr_url`, GET responses for `/agent_runners` and `/agent_runners/{id}` are automatically enriched with four additional fields fetched from the GitHub API. This requires the `GITHUB_PAT` environment variable to be set on the server.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `pr_mergeable` | boolean \| null | Whether the PR can be merged cleanly (`null` if GitHub is still computing) |
+| `pr_behind_by` | number \| null | How many commits the PR branch is behind the base branch |
+| `pr_review_state` | string \| null | Review status: `approved`, `changes_requested`, or `null` if no reviews |
+| `pr_checks_status` | string \| null | CI check status: `success`, `failure`, `pending`, or `null` if no checks |
+
+These fields are cached for 60 seconds to avoid GitHub API rate limits. Runners without a `pr_url` are returned unmodified.
 
 ## Error Responses
 

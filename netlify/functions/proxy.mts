@@ -5,8 +5,93 @@ import { apiKeys, users, auditLog } from "../../db/schema.ts";
 import { eq } from "drizzle-orm";
 import { resolveScope, hasScope } from "./_shared/scopes.mts";
 import { maybeSync } from "./_shared/maybeSync.mts";
+import {
+  parsePrUrl,
+  githubHeaders,
+  computeReviewDecision,
+  computeOverallCheckStatus,
+  fetchAllChecks,
+} from "./_shared/github.mts";
 
 const NETLIFY_API_BASE = "https://api.netlify.com/api/v1";
+
+// --- PR status enrichment for runner responses ---
+
+interface PrStatusData {
+  pr_mergeable: boolean | null;
+  pr_behind_by: number | null;
+  pr_review_state: string | null;
+  pr_checks_status: string | null;
+}
+
+const prStatusCache = new Map<
+  string,
+  { data: PrStatusData; expiresAt: number }
+>();
+const PR_STATUS_CACHE_TTL = 60_000; // 60 seconds
+
+async function fetchPrStatus(
+  prUrl: string,
+  githubPat: string
+): Promise<PrStatusData | null> {
+  const cached = prStatusCache.get(prUrl);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.data;
+  }
+
+  const parsed = parsePrUrl(prUrl);
+  if (!parsed) return null;
+
+  const { owner, repo, number } = parsed;
+  const headers = githubHeaders(githubPat);
+
+  try {
+    const prRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/pulls/${number}`,
+      { headers }
+    );
+    if (!prRes.ok) return null;
+
+    const pr = await prRes.json();
+    const headSha = pr.head.sha;
+
+    const [reviewsRes, checksResult, compareRes] = await Promise.all([
+      fetch(
+        `https://api.github.com/repos/${owner}/${repo}/pulls/${number}/reviews`,
+        { headers }
+      ),
+      fetchAllChecks(owner, repo, headSha, githubPat),
+      fetch(
+        `https://api.github.com/repos/${owner}/${repo}/compare/${pr.base.ref}...${pr.head.ref}`,
+        { headers }
+      ),
+    ]);
+
+    const reviews = reviewsRes.ok ? await reviewsRes.json() : [];
+    const reviewDecision = computeReviewDecision(
+      Array.isArray(reviews) ? reviews : []
+    );
+    const { allChecks } = checksResult;
+    const overallCheckStatus = computeOverallCheckStatus(allChecks);
+    const compareData = compareRes.ok ? await compareRes.json() : null;
+
+    const status: PrStatusData = {
+      pr_mergeable: pr.mergeable ?? null,
+      pr_behind_by: compareData?.behind_by ?? null,
+      pr_review_state: reviewDecision,
+      pr_checks_status: overallCheckStatus,
+    };
+
+    prStatusCache.set(prUrl, {
+      data: status,
+      expiresAt: Date.now() + PR_STATUS_CACHE_TTL,
+    });
+    return status;
+  } catch (err) {
+    console.warn("[proxy] Failed to fetch PR status for", prUrl, err);
+    return null;
+  }
+}
 
 export default async (request: Request, _context: Context) => {
   // 1. Extract API key from Authorization header
@@ -204,8 +289,44 @@ export default async (request: Request, _context: Context) => {
     maybeSync({ origin, accessToken: user.accessToken, force: true });
   }
 
-  // 14. Return Netlify API response
+  // 14. Return Netlify API response (enriched with PR status for runner GETs)
   const responseBody = await netlifyRes.text();
+
+  const isRunnerGetEndpoint =
+    request.method === "GET" && netlifyRes.ok && pathSegments.length <= 2;
+
+  if (isRunnerGetEndpoint) {
+    const githubPat = Netlify.env.get("GITHUB_PAT");
+    if (githubPat) {
+      try {
+        const data = JSON.parse(responseBody);
+
+        if (Array.isArray(data)) {
+          // Collection: enrich each runner that has a PR
+          const enriched = await Promise.all(
+            data.map(async (runner: any) => {
+              if (!runner.pr_url) return runner;
+              const prStatus = await fetchPrStatus(runner.pr_url, githubPat);
+              return prStatus ? { ...runner, ...prStatus } : runner;
+            })
+          );
+          return Response.json(enriched, { status: netlifyRes.status });
+        } else if (data?.pr_url) {
+          // Single runner with a PR
+          const prStatus = await fetchPrStatus(data.pr_url, githubPat);
+          if (prStatus) {
+            return Response.json(
+              { ...data, ...prStatus },
+              { status: netlifyRes.status }
+            );
+          }
+        }
+      } catch {
+        // Enrichment failed, fall through to return original response
+      }
+    }
+  }
+
   return new Response(responseBody, {
     status: netlifyRes.status,
     headers: {
