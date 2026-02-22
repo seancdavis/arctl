@@ -65,7 +65,7 @@ curl -H "Authorization: Bearer oc_abc123..." \
   https://<your-app>.netlify.app/api/proxy/agent_runners
 ```
 
-**Response:** Array of runner objects. Runners with a `pr_url` are enriched with additional PR status fields (see [PR Status Enrichment](#pr-status-enrichment)).
+**Response:** Array of runner objects. All runners include a `derived_state` field. Runners with a `pr_url` are enriched with additional PR status fields (see [Response Enrichment](#response-enrichment)). Runners in `error` state include an `error_message` field.
 
 ```json
 [
@@ -86,7 +86,8 @@ curl -H "Authorization: Bearer oc_abc123..." \
     "pr_mergeable": true,
     "pr_behind_by": 0,
     "pr_review_state": "approved",
-    "pr_checks_status": "success"
+    "pr_checks_status": "success",
+    "derived_state": "done"
   }
 ]
 ```
@@ -152,6 +153,26 @@ DELETE /agent_runners/{runner_id}
 Stops the currently running session.
 
 **Scope:** `agent_runners:write`
+
+**Response:** `202 Accepted`
+
+---
+
+### Archive Runner
+
+```
+POST /agent_runners/{runner_id}/archive
+```
+
+Archives a runner (soft delete). Archived runners no longer appear in the default listing.
+
+**Scope:** `agent_runners:write`
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer oc_abc123..." \
+  https://<your-app>.netlify.app/api/proxy/agent_runners/RUNNER_ID/archive
+```
 
 **Response:** `202 Accepted`
 
@@ -324,6 +345,8 @@ Reverts to a previous session, discarding all sessions after it.
 | `cancelled` | Manually stopped |
 | `archived` | Soft-deleted |
 
+The `state` field comes from the Netlify API and does not distinguish between "done and awaiting review" vs "done and PR merged". Use the `derived_state` field (see [Response Enrichment](#response-enrichment)) for finer-grained status.
+
 ## Typical Workflow
 
 ### 1. Create a runner
@@ -399,20 +422,51 @@ curl -H "Authorization: Bearer $API_KEY" \
   $BASE_URL/agent_runners/$RUNNER_ID
 ```
 
-The response includes `pr_mergeable`, `pr_behind_by`, `pr_review_state`, and `pr_checks_status` alongside the standard runner fields.
+The response includes `pr_state` (live from GitHub), `pr_mergeable`, `pr_behind_by`, `pr_review_state`, `pr_checks_status`, and `derived_state` alongside the standard runner fields. When a PR is merged, `derived_state` changes from `"done"` to `"merged"`.
 
-## PR Status Enrichment
+## Response Enrichment
 
-When a runner has a `pr_url`, GET responses for `/agent_runners` and `/agent_runners/{id}` are automatically enriched with four additional fields fetched from the GitHub API. This requires the `GITHUB_PAT` environment variable to be set on the server.
+GET responses for `/agent_runners` and `/agent_runners/{id}` are automatically enriched with additional fields beyond what the Netlify API returns. This enrichment is applied to every runner in the response.
+
+### Derived State
+
+Every runner includes a `derived_state` field that provides a more granular status than `state` alone:
+
+| `derived_state` | Condition | Description |
+|-----------------|-----------|-------------|
+| `new` | `state` is `new` | Queued |
+| `running` | `state` is `running` | Agent is working |
+| `done` | `state` is `done`, no merged PR | Completed, needs review |
+| `merged` | `state` is `done`, `pr_state` is `merged` | PR merged, shipped |
+| `error` | `state` is `error` | Failed |
+| `cancelled` | `state` is `cancelled` | Stopped |
+| `archived` | `state` is `archived` | Soft-deleted |
+
+Use `derived_state` instead of `state` when you need to distinguish between runners that are done-and-waiting vs done-and-shipped.
+
+### PR Status (GitHub)
+
+When a runner has a `pr_url`, the response is enriched with live data from the GitHub API. This requires the `GITHUB_PAT` environment variable to be set on the server.
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `pr_state` | string | Live PR state from GitHub: `open`, `closed`, `merged`, or `draft`. Overrides the potentially stale value from the Netlify API. |
 | `pr_mergeable` | boolean \| null | Whether the PR can be merged cleanly (`null` if GitHub is still computing) |
 | `pr_behind_by` | number \| null | How many commits the PR branch is behind the base branch |
 | `pr_review_state` | string \| null | Review status: `approved`, `changes_requested`, or `null` if no reviews |
 | `pr_checks_status` | string \| null | CI check status: `success`, `failure`, `pending`, or `null` if no checks |
 
-These fields are cached for 60 seconds to avoid GitHub API rate limits. Runners without a `pr_url` are returned unmodified.
+These fields are cached for 60 seconds to avoid GitHub API rate limits. Runners without a `pr_url` are returned with their original `pr_state` from the Netlify API.
+
+### Error Message
+
+When a runner is in `error` state, the response includes an `error_message` field with the result text from the errored session. This lets API consumers diagnose failures without making additional calls.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `error_message` | string \| null | The `result` field from the latest error session, if available |
+
+Error messages are cached for 5 minutes (errors are terminal, so the message won't change).
 
 ## Error Responses
 
@@ -435,5 +489,6 @@ All errors return JSON with an `error` field:
 ## Data Freshness
 
 - **Proxy responses are always live** — they come directly from the Netlify API, not from a cache. When you `GET /agent_runners/{runner_id}`, you get the current state from Netlify.
+- **PR state is live from GitHub** — the `pr_state` field on GET responses reflects the current GitHub PR state, not the potentially stale value from the Netlify API. This means merges and closes are reflected immediately (within the 60s cache window).
 - **The kanban board syncs asynchronously** — after any write operation (POST, PATCH, DELETE), a background sync is triggered automatically so the board reflects changes within ~30 seconds.
 - **Polling is recommended** — when waiting for a runner to complete, poll `GET /agent_runners/{runner_id}` every 15-30 seconds. Responses are live from the Netlify API, so you always see the latest state.

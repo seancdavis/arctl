@@ -18,6 +18,7 @@ const NETLIFY_API_BASE = "https://api.netlify.com/api/v1";
 // --- PR status enrichment for runner responses ---
 
 interface PrStatusData {
+  pr_state: string;
   pr_mergeable: boolean | null;
   pr_behind_by: number | null;
   pr_review_state: string | null;
@@ -55,6 +56,18 @@ async function fetchPrStatus(
     const pr = await prRes.json();
     const headSha = pr.head.sha;
 
+    // Derive live pr_state from GitHub data (Netlify's pr_state can be stale)
+    let prState: string;
+    if (pr.merged) {
+      prState = "merged";
+    } else if (pr.state === "closed") {
+      prState = "closed";
+    } else if (pr.draft) {
+      prState = "draft";
+    } else {
+      prState = "open";
+    }
+
     const [reviewsRes, checksResult, compareRes] = await Promise.all([
       fetch(
         `https://api.github.com/repos/${owner}/${repo}/pulls/${number}/reviews`,
@@ -76,6 +89,7 @@ async function fetchPrStatus(
     const compareData = compareRes.ok ? await compareRes.json() : null;
 
     const status: PrStatusData = {
+      pr_state: prState,
       pr_mergeable: pr.mergeable ?? null,
       pr_behind_by: compareData?.behind_by ?? null,
       pr_review_state: reviewDecision,
@@ -89,6 +103,55 @@ async function fetchPrStatus(
     return status;
   } catch (err) {
     console.warn("[proxy] Failed to fetch PR status for", prUrl, err);
+    return null;
+  }
+}
+
+// --- Derived state: distinguishes "merged" and "archived" from "done" ---
+
+function computeDerivedState(runner: any): string {
+  const state = (runner.state || "").toLowerCase();
+  if (state === "archived") return "archived";
+  if (state === "done" && runner.pr_state === "merged") return "merged";
+  return state;
+}
+
+// --- Error message enrichment for error runners ---
+
+const errorMessageCache = new Map<
+  string,
+  { message: string | null; expiresAt: number }
+>();
+const ERROR_MESSAGE_CACHE_TTL = 300_000; // 5 minutes (errors are terminal)
+
+async function fetchErrorMessage(
+  runnerId: string,
+  accessToken: string
+): Promise<string | null> {
+  const cached = errorMessageCache.get(runnerId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.message;
+  }
+
+  try {
+    const res = await fetch(
+      `${NETLIFY_API_BASE}/agent_runners/${runnerId}/sessions`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    if (!res.ok) return null;
+    const sessionList = await res.json();
+    // Find the latest error session and return its result as the error message
+    const errorSession = [...sessionList]
+      .reverse()
+      .find((s: any) => s.state === "error");
+    const message = errorSession?.result || null;
+
+    errorMessageCache.set(runnerId, {
+      message,
+      expiresAt: Date.now() + ERROR_MESSAGE_CACHE_TTL,
+    });
+    return message;
+  } catch {
     return null;
   }
 }
@@ -289,41 +352,49 @@ export default async (request: Request, _context: Context) => {
     maybeSync({ origin, accessToken: user.accessToken, force: true });
   }
 
-  // 14. Return Netlify API response (enriched with PR status for runner GETs)
+  // 14. Return Netlify API response (enriched for runner GETs)
   const responseBody = await netlifyRes.text();
 
   const isRunnerGetEndpoint =
     request.method === "GET" && netlifyRes.ok && pathSegments.length <= 2;
 
   if (isRunnerGetEndpoint) {
-    const githubPat = Netlify.env.get("GITHUB_PAT");
-    if (githubPat) {
-      try {
-        const data = JSON.parse(responseBody);
+    try {
+      const data = JSON.parse(responseBody);
+      const githubPat = Netlify.env.get("GITHUB_PAT");
 
-        if (Array.isArray(data)) {
-          // Collection: enrich each runner that has a PR
-          const enriched = await Promise.all(
-            data.map(async (runner: any) => {
-              if (!runner.pr_url) return runner;
-              const prStatus = await fetchPrStatus(runner.pr_url, githubPat);
-              return prStatus ? { ...runner, ...prStatus } : runner;
-            })
-          );
-          return Response.json(enriched, { status: netlifyRes.status });
-        } else if (data?.pr_url) {
-          // Single runner with a PR
-          const prStatus = await fetchPrStatus(data.pr_url, githubPat);
-          if (prStatus) {
-            return Response.json(
-              { ...data, ...prStatus },
-              { status: netlifyRes.status }
-            );
-          }
+      const enrichRunner = async (runner: any) => {
+        let enriched = { ...runner };
+
+        // PR status enrichment from GitHub (includes live pr_state)
+        if (runner.pr_url && githubPat) {
+          const prStatus = await fetchPrStatus(runner.pr_url, githubPat);
+          if (prStatus) Object.assign(enriched, prStatus);
         }
-      } catch {
-        // Enrichment failed, fall through to return original response
+
+        // Derived state: distinguishes merged/archived from done
+        enriched.derived_state = computeDerivedState(enriched);
+
+        // Error message enrichment
+        if ((runner.state || "").toLowerCase() === "error") {
+          enriched.error_message = await fetchErrorMessage(
+            runner.id,
+            user.accessToken
+          );
+        }
+
+        return enriched;
+      };
+
+      if (Array.isArray(data)) {
+        const enriched = await Promise.all(data.map(enrichRunner));
+        return Response.json(enriched, { status: netlifyRes.status });
+      } else if (data?.id) {
+        const enriched = await enrichRunner(data);
+        return Response.json(enriched, { status: netlifyRes.status });
       }
+    } catch {
+      // Enrichment failed, fall through to return original response
     }
   }
 
