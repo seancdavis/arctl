@@ -6,6 +6,11 @@ interface KanbanCardProps {
   run: Run;
 }
 
+function extractPrNumber(url: string): string | null {
+  const match = url.match(/\/pull\/(\d+)/);
+  return match ? match[1] : null;
+}
+
 export function KanbanCard({ run }: KanbanCardProps) {
   const navigate = useNavigate();
 
@@ -19,13 +24,24 @@ export function KanbanCard({ run }: KanbanCardProps) {
     });
   };
 
+  const prNumber = run.pullRequestUrl
+    ? extractPrNumber(run.pullRequestUrl)
+    : null;
+
   return (
     <div
       onClick={() => navigate(`/runs/${run.id}`)}
       className="bg-[var(--surface-2)] border border-[var(--border)] border-l-2 border-l-[var(--accent-blue)] p-3 cursor-pointer hover:border-[var(--accent-blue)]/50 hover:bg-[var(--surface-2)]/80 transition-colors"
     >
-      <div className="text-xs font-mono uppercase text-[var(--accent-blue)] truncate mb-1">
-        [{run.siteName || COPY.board.unknownSite}]
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-xs font-mono uppercase text-[var(--accent-blue)] truncate">
+          [{run.siteName || COPY.board.unknownSite}]
+        </div>
+        {prNumber && (
+          <span className="text-[10px] font-mono px-1.5 py-0.5 bg-[#39FF14]/15 text-[#39FF14] font-medium flex-shrink-0">
+            #{prNumber}
+          </span>
+        )}
       </div>
       <h3 className="font-mono font-medium text-[var(--text-primary)] text-sm line-clamp-2 mb-2">
         {run.title || COPY.board.untitledRun}
