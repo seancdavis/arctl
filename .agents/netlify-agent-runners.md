@@ -185,7 +185,7 @@ Update agent runner properties.
 | -------------------- | ------- | -------- | -------------------------------------------- |
 | `base_deploy_id`     | string  | No       | Deploy ID to use as base for future sessions |
 | `result_diff`        | string  | No       | The result diff content                      |
-| `result_diff_binary` | boolean | No       | Whether diff is binary                       |
+| `result_diff_binary` | string  | No       | Binary-encoded diff content                  |
 | `result_diff_s3_key` | string  | No       | S3 key for stored diff                       |
 | `sha`                | string  | No       | Start commit SHA                             |
 
@@ -538,12 +538,12 @@ Update session properties.
 | `result`                 | string  | No       | Session result text                   |
 | `result_branch`          | string  | No       | Result branch name                    |
 | `result_diff`            | string  | No       | Result diff content                   |
-| `result_diff_binary`     | boolean | No       | Whether result diff is binary         |
+| `result_diff_binary`     | string  | No       | Binary-encoded result diff content    |
 | `result_diff_s3_key`     | string  | No       | S3 key for result diff                |
 | `cumulative_diff`        | string  | No       | Cumulative diff content               |
-| `cumulative_diff_binary` | boolean | No       | Whether cumulative diff is binary     |
+| `cumulative_diff_binary` | string  | No       | Binary-encoded cumulative diff content|
 | `cumulative_diff_s3_key` | string  | No       | S3 key for cumulative diff            |
-| `duration`               | number  | No       | Session duration in seconds           |
+| `duration`               | number  | No       | Session duration in milliseconds      |
 | `result_zip_file_name`   | string  | No       | Result zip filename                   |
 | `deploy_id`              | string  | No       | Associated deploy ID                  |
 | `state`                  | string  | No       | Session state                         |
@@ -695,7 +695,7 @@ Generate presigned S3 URLs for uploading session diffs.
   "id": "string",
   "site_id": "string",
   "parent_agent_runner_id": "string | null",
-  "state": "NEW | RUNNING | ERROR | DONE | CANCELLED | ARCHIVED",
+  "state": "new | running | error | done | cancelled | archived",
   "created_at": "ISO 8601 timestamp",
   "updated_at": "ISO 8601 timestamp",
   "done_at": "ISO 8601 timestamp | null",
@@ -704,7 +704,7 @@ Generate presigned S3 URLs for uploading session diffs.
   "result_branch": "string | null",
   "pr_url": "string | null",
   "pr_branch": "string | null",
-  "pr_state": "OPEN | CLOSED | MERGED | DRAFT | null",
+  "pr_state": "open | closed | merged | draft | null",
   "pr_number": "integer | null",
   "pr_is_being_created": "boolean",
   "pr_error": "string | null",
@@ -722,6 +722,7 @@ Generate presigned S3 URLs for uploading session diffs.
   "attached_file_keys": "array<string>",
   "latest_session_deploy_id": "string | null",
   "latest_session_deploy_url": "string | null",
+  "latest_session_deploy_screenshot_url": "string | null",
   "latest_session_state": "string | null"
 }
 ```
@@ -733,7 +734,7 @@ Generate presigned S3 URLs for uploading session diffs.
   "id": "string",
   "agent_runner_id": "string",
   "dev_server_id": "string | null",
-  "state": "NEW | RUNNING | ERROR | DONE | CANCELLED",
+  "state": "new | running | error | done | cancelled",
   "created_at": "ISO 8601 timestamp",
   "updated_at": "ISO 8601 timestamp",
   "done_at": "ISO 8601 timestamp | null",
@@ -744,7 +745,7 @@ Generate presigned S3 URLs for uploading session diffs.
     "model": "string | null"
   },
   "result": "string | null",
-  "duration": "number | null",
+  "duration": "number | null (milliseconds)",
   "steps": [
     {
       "title": "string",
