@@ -16,7 +16,7 @@ export function useActiveRunPolling() {
 
   useEffect(() => {
     const activeRunIds = runs
-      .filter((r) => (r.state === "NEW" || r.state === "RUNNING") && !r.archivedAt)
+      .filter((r) => (r.state === "NEW" || r.state === "RUNNING") && !r.completedAt)
       .map((r) => r.id);
 
     if (activeRunIds.length === 0) return;

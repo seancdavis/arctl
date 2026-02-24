@@ -8,7 +8,7 @@ import { useAuth } from "./lib/auth";
 import { Header } from "./components/layout/Header";
 import { Sidebar } from "./components/layout/Sidebar";
 import { KanbanBoard } from "./components/kanban/KanbanBoard";
-import { ArchiveView } from "./components/archive/ArchiveView";
+import { CompletedView } from "./components/archive/CompletedView";
 import { SettingsView } from "./components/settings/SettingsView";
 import { CreateRunModal } from "./components/runs/CreateRunModal";
 import { RunDetailPanel } from "./components/runs/RunDetailPanel";
@@ -49,10 +49,10 @@ function AuthenticatedApp() {
 
   const {
     runs,
-    archivedRuns,
+    completedRuns,
     createRun,
-    archiveRun,
-    unarchiveRun,
+    completeRun,
+    uncompleteRun,
     addSession,
     createPullRequest,
     updatePullRequest,
@@ -98,7 +98,7 @@ function AuthenticatedApp() {
                 path="runs/:id"
                 element={
                   <RunDetailPanel
-                    onArchive={archiveRun}
+                    onComplete={completeRun}
                     onCreatePR={createPullRequest}
                     onUpdatePR={updatePullRequest}
                     onMergePR={mergePullRequest}
@@ -108,12 +108,12 @@ function AuthenticatedApp() {
               />
             </Route>
             <Route
-              path="/archive"
+              path="/completed"
               element={
-                <ArchiveView
-                  runs={archivedRuns}
+                <CompletedView
+                  runs={completedRuns}
                   isLoading={isLoading}
-                  onUnarchive={unarchiveRun}
+                  onUncomplete={uncompleteRun}
                 />
               }
             />

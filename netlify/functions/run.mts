@@ -134,7 +134,7 @@ export default async (req: Request, context: Context) => {
 
   if (req.method === "PATCH") {
     const body = await req.json();
-    const { archived } = body;
+    const { completed } = body;
 
     const [existingRun] = await db.select().from(runs).where(and(eq(runs.id, runId), eq(runs.userId, auth.userId)));
     if (!existingRun) {
@@ -144,10 +144,10 @@ export default async (req: Request, context: Context) => {
     const now = new Date();
     const updates: Partial<typeof runs.$inferInsert> = { updatedAt: now };
 
-    if (archived === true) {
-      updates.archivedAt = now;
-    } else if (archived === false) {
-      updates.archivedAt = null;
+    if (completed === true) {
+      updates.completedAt = now;
+    } else if (completed === false) {
+      updates.completedAt = null;
     }
 
     await db.update(runs).set(updates).where(eq(runs.id, runId));

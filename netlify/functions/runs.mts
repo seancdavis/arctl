@@ -17,19 +17,19 @@ export default async (req: Request, context: Context) => {
 
   if (req.method === "GET") {
     const url = new URL(req.url);
-    const includeArchived = url.searchParams.get("archived") === "true";
-    console.log(`[runs] GET runs (archived: ${includeArchived})`);
+    const includeCompleted = url.searchParams.get("completed") === "true";
+    console.log(`[runs] GET runs (completed: ${includeCompleted})`);
 
-    const result = includeArchived
+    const result = includeCompleted
       ? await db
           .select()
           .from(runs)
-          .where(and(eq(runs.userId, auth.userId), isNotNull(runs.archivedAt)))
-          .orderBy(desc(runs.archivedAt))
+          .where(and(eq(runs.userId, auth.userId), isNotNull(runs.completedAt)))
+          .orderBy(desc(runs.completedAt))
       : await db
           .select()
           .from(runs)
-          .where(and(eq(runs.userId, auth.userId), isNull(runs.archivedAt)))
+          .where(and(eq(runs.userId, auth.userId), isNull(runs.completedAt)))
           .orderBy(desc(runs.createdAt));
 
     console.log(`[runs] GET returning ${result.length} runs`);

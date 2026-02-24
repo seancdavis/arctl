@@ -57,7 +57,7 @@ src/
   api/               # Frontend API clients (runsApi, sitesApi, syncApi, apiKeysApi, fetchWithAuth)
   components/
     api-keys/        # ApiKeyList, CreateApiKeyForm, ApiKeyRevealModal
-    archive/         # ArchiveView
+    archive/         # CompletedView
     kanban/          # KanbanBoard, KanbanColumn, KanbanCard
     layout/          # Header (with UserMenu), Sidebar (desktop + mobile bottom nav)
     runs/            # RunDetailPanel (slide-out), CreateRunModal, AddSessionForm, SitePicker
@@ -90,7 +90,7 @@ src/
 
 ### Database Schema (Drizzle)
 - **users**: id (uuid), netlifyUserId, email, fullName, avatarUrl, accessToken, timestamps
-- **runs**: id, siteId, siteName, title, state, branch, pullRequestUrl, pullRequestState, pullRequestBranch, deployPreviewUrl, timestamps (with timezone), prCommittedAt, prNeedsUpdate, prCheckStatus, mergedAt, archivedAt, userId (FK→users, nullable)
+- **runs**: id, siteId, siteName, title, state, branch, pullRequestUrl, pullRequestState, pullRequestBranch, deployPreviewUrl, timestamps (with timezone), prCommittedAt, prNeedsUpdate, prCheckStatus, mergedAt, completedAt, userId (FK→users, nullable)
 - **sessions**: id, runId, state, prompt, timestamps (with timezone), title, result, duration (seconds), doneAt, mode, hasResultDiff
 - **notes**: id, runId, content, createdAt (with timezone), userId (FK→users, nullable)
 - **apiKeys**: id (uuid), userId (FK→users), keyHash (unique), keyPrefix, name, siteId, siteName, scopes (jsonb), expiresAt, isRevoked, lastUsedAt, createdAt
@@ -112,7 +112,7 @@ Migrations use `prefix: 'timestamp'` in `drizzle.config.ts` to avoid conflicts a
 | pr_merged | PR MERGED | `DONE` (PR merged) | PR merged |
 | error | FAULT | `ERROR` | Failed runs |
 
-Column mapping logic is in `src/types/runs.ts` (`getKanbanColumn`). Archived runs are excluded from all columns.
+Column mapping logic is in `src/types/runs.ts` (`getKanbanColumn`). Completed runs (those with `completedAt` set) are excluded from all columns. "Complete" is an arctl-level concept that hides runs from the board; "archive" is a Netlify API action that sets the runner's state to `archived`.
 
 ### Sync & Polling Architecture
 Three-tier approach:
@@ -135,7 +135,7 @@ The `?sync=true` query param on `/api/runs/:id` fetches from Netlify API, update
 - **btn-neon**: Teal gradient, `font-mono`, `uppercase`, `letter-spacing`.
 - **terminal-input**: CSS class for inputs with left accent border.
 - **Slide-out detail panel**: Clicking a kanban card navigates to `/runs/:id` and opens a right-side panel. Board stays visible (dimmed) behind backdrop. Nested route via `<Outlet />` in KanbanBoard.
-- **Sidebar**: Collapsible desktop sidebar (60px collapsed, ~200px expanded) + mobile bottom nav. Nav labels: "Ops Board", "Cold Storage", "Credentials", "Config".
+- **Sidebar**: Collapsible desktop sidebar (60px collapsed, ~200px expanded) + mobile bottom nav. Nav labels: "Active Ops", "Completed", "Credentials", "Config".
 - **Kanban cards**: Hard edges, left accent border (`border-l-2`), site name as `[SITE-NAME]` prefix in uppercase mono.
 - **User menu**: Avatar/initials in Header with disconnect dropdown.
 
@@ -176,7 +176,7 @@ npm run db:studio    # Open Drizzle Studio
 - [x] Create runs via Netlify API (defaults to Claude agent)
 - [x] Add follow-up sessions to runs
 - [x] Create PRs from completed runs
-- [x] Archive/restore runs
+- [x] Complete/restore runs (replaces old archive — "complete" hides from board, "archive" is Netlify-level)
 - [x] Background sync with exponential backoff
 - [x] Per-run polling for active runs (NEW/RUNNING)
 - [x] Detail panel polling for mutable runs
@@ -236,7 +236,7 @@ All Netlify Functions must use clean `/api` routes via the `config.path` export.
 | auth-callback.mts | `/api/auth/callback` | GET | OAuth token exchange, upserts user |
 | auth-logout.mts | `/api/auth/logout` | GET, POST | Clears session cookie |
 | auth-session.mts | `/api/auth/session` | GET | Returns user + isAllowed |
-| runs.mts | `/api/runs` | GET, POST | `?archived=true` for archived runs |
+| runs.mts | `/api/runs` | GET, POST | `?completed=true` for completed runs |
 | run.mts | `/api/runs/:id` | GET, PATCH | `?sync=true` fetches from Netlify API first |
 | run-sessions.mts | `/api/runs/:id/sessions` | GET, POST | |
 | run-notes.mts | `/api/runs/:id/notes` | GET, POST | Local notes, no Netlify API |
@@ -273,6 +273,10 @@ curl -H "Authorization: Bearer oc_..." \
 ```
 
 The proxy automatically injects `site_id` for collection endpoints and verifies runner ownership for item endpoints.
+
+The proxy handles two distinct operations:
+- **`POST /api/proxy/agent_runners/:id/complete`** — arctl-local action that sets `completedAt` in the DB. Completed runners are filtered from the default `GET /agent_runners` listing (use `?include_completed=true` to include them).
+- **`POST /api/proxy/agent_runners/:id/archive`** — proxies directly to Netlify's archive endpoint, changing the runner's Netlify state to `archived`.
 
 ### Scope System
 

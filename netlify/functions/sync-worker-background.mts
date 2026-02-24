@@ -230,7 +230,7 @@ export default async (req: Request, context: Context) => {
   }
 
   // Summary
-  const activeRuns = await db.select().from(runs).where(isNull(runs.archivedAt));
+  const activeRuns = await db.select().from(runs).where(isNull(runs.completedAt));
   const activeCount = activeRuns.filter((r) => r.state === "NEW" || r.state === "RUNNING").length;
 
   console.log(`[sync-worker] Sync complete: ${runsInserted} inserted, ${runsUpdated} updated, ${activeCount} active runs`);

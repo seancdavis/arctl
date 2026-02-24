@@ -4,7 +4,7 @@ import { triggerSync } from "../api/syncApi";
 import { fetchRuns } from "../api/runsApi";
 
 export function useSyncStatus() {
-  const { syncState, setSyncState, setRuns, setArchivedRuns, setError } =
+  const { syncState, setSyncState, setRuns, setCompletedRuns, setError } =
     useKanbanStore();
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -21,19 +21,19 @@ export function useSyncStatus() {
         await new Promise((resolve) => setTimeout(resolve, 1500));
 
         // Reload runs from the database
-        const [activeRuns, archived] = await Promise.all([
+        const [activeRuns, completed] = await Promise.all([
           fetchRuns(false),
           fetchRuns(true),
         ]);
         setRuns(activeRuns);
-        setArchivedRuns(archived);
+        setCompletedRuns(completed);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to trigger sync");
       } finally {
         setIsSyncing(false);
       }
     },
-    [setSyncState, setRuns, setArchivedRuns, setError]
+    [setSyncState, setRuns, setCompletedRuns, setError]
   );
 
   const formatLastSync = () => {

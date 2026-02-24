@@ -26,7 +26,7 @@ export const COPY = {
 
   nav: {
     board: "Active Ops",
-    archive: "Archive",
+    completed: "Completed",
     keys: "Credentials",
     settings: "Config",
     collapse: "Collapse",
@@ -84,7 +84,7 @@ export const COPY = {
     updatePr: "Update PR",
     updatingPr: "Updating PR...",
     prUpdated: "PR Updated",
-    archive: "Archive",
+    complete: "Complete",
     mergePr: "Merge PR",
     mergingPr: "Merging...",
     prMerged: "PR Merged",
@@ -155,14 +155,14 @@ export const COPY = {
     error: "Failed to log note",
   },
 
-  archive: {
-    emptyTitle: "Archive Empty",
-    emptyMessage: "Archived operations will appear here.",
+  completed: {
+    emptyTitle: "No Completed Ops",
+    emptyMessage: "Completed operations will appear here.",
     colTitle: "Title",
     colSite: "Target",
     colState: "State",
     colCreated: "Created",
-    colArchived: "Archived",
+    colCompleted: "Completed",
     colLinks: "Links",
     colActions: "Actions",
     restore: "Restore",

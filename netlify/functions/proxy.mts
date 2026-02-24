@@ -1,8 +1,8 @@
 import type { Context, Config } from "@netlify/functions";
 import { createHash } from "node:crypto";
 import { db } from "../../db/index.ts";
-import { apiKeys, users, auditLog } from "../../db/schema.ts";
-import { eq } from "drizzle-orm";
+import { apiKeys, users, auditLog, runs } from "../../db/schema.ts";
+import { eq, and, isNotNull } from "drizzle-orm";
 import { resolveScope, hasScope } from "./_shared/scopes.mts";
 import { maybeSync } from "./_shared/maybeSync.mts";
 import {
@@ -299,6 +299,53 @@ export default async (request: Request, _context: Context) => {
     netlifyUrl = `${NETLIFY_API_BASE}${proxyPath}`;
   }
 
+  // 9b. Handle POST /agent_runners/:id/complete — arctl-local action (not proxied)
+  const lastSegment = pathSegments[pathSegments.length - 1];
+  if (request.method === "POST" && lastSegment === "complete" && pathSegments.length === 3) {
+    const runnerId = pathSegments[1];
+    const now = new Date();
+
+    // Look up the run in arctl DB
+    const [existingRun] = await db.select().from(runs).where(eq(runs.id, runnerId)).limit(1);
+    if (!existingRun) {
+      // Run not yet in arctl DB — insert a minimal record marked as completed
+      try {
+        const runnerRes = await fetch(`${NETLIFY_API_BASE}/agent_runners/${runnerId}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        });
+        if (runnerRes.ok) {
+          const runner = await runnerRes.json();
+          await db.insert(runs).values({
+            id: runnerId,
+            siteId: runner.site_id || keyRecord.siteId,
+            siteName: runner.site_name || null,
+            title: runner.title || null,
+            state: (runner.state || "DONE").toUpperCase(),
+            branch: runner.branch || null,
+            pullRequestUrl: runner.pr_url || null,
+            pullRequestState: runner.pr_state || null,
+            pullRequestBranch: runner.pr_branch || null,
+            deployPreviewUrl: runner.latest_session_deploy_url || null,
+            createdAt: runner.created_at ? new Date(runner.created_at) : now,
+            updatedAt: now,
+            syncedAt: now,
+            completedAt: now,
+          });
+        }
+      } catch (e) {
+        console.error("[proxy] Failed to fetch runner for complete:", e);
+      }
+    } else {
+      await db.update(runs).set({ completedAt: now, updatedAt: now }).where(eq(runs.id, runnerId));
+    }
+
+    await db.update(apiKeys).set({ lastUsedAt: now }).where(eq(apiKeys.id, keyRecord.id));
+    await writeAuditLog(keyRecord, "POST /agent_runners/:id/complete", proxyPath, 200);
+
+    console.log("[proxy] Completed runner:", runnerId);
+    return Response.json({ id: runnerId, completed: true, completed_at: now.toISOString() });
+  }
+
   // 10. Proxy the request to Netlify API
   console.log("[proxy] Proxying:", request.method, netlifyUrl);
   const proxyHeaders: Record<string, string> = {
@@ -363,8 +410,20 @@ export default async (request: Request, _context: Context) => {
       const data = JSON.parse(responseBody);
       const githubPat = Netlify.env.get("GITHUB_PAT");
 
+      // Build a set of completed runner IDs from arctl DB for this site
+      const completedRuns = await db
+        .select({ id: runs.id, completedAt: runs.completedAt })
+        .from(runs)
+        .where(and(eq(runs.siteId, keyRecord.siteId), isNotNull(runs.completedAt)));
+      const completedMap = new Map(completedRuns.map((r) => [r.id, r.completedAt]));
+
       const enrichRunner = async (runner: any) => {
         let enriched = { ...runner };
+
+        // Add completed status from arctl DB
+        const completedAt = completedMap.get(runner.id);
+        enriched.completed = !!completedAt;
+        enriched.completed_at = completedAt ? new Date(completedAt).toISOString() : null;
 
         // PR status enrichment from GitHub (includes live pr_state)
         if (runner.pr_url && githubPat) {
@@ -388,7 +447,10 @@ export default async (request: Request, _context: Context) => {
 
       if (Array.isArray(data)) {
         const enriched = await Promise.all(data.map(enrichRunner));
-        return Response.json(enriched, { status: netlifyRes.status });
+        // Filter out completed runners unless ?include_completed=true
+        const includeCompleted = url.searchParams.get("include_completed") === "true";
+        const filtered = includeCompleted ? enriched : enriched.filter((r: any) => !r.completed);
+        return Response.json(filtered, { status: netlifyRes.status });
       } else if (data?.id) {
         const enriched = await enrichRunner(data);
         return Response.json(enriched, { status: netlifyRes.status });

@@ -4,12 +4,12 @@ import type { Run, Site, SyncState } from "../types/runs";
 interface KanbanState {
   // Data
   runs: Run[];
-  archivedRuns: Run[];
+  completedRuns: Run[];
   sites: Site[];
   syncState: SyncState | null;
 
   // UI State
-  view: "kanban" | "archive" | "settings";
+  view: "kanban" | "completed" | "settings";
   isLoading: boolean;
   error: string | null;
   isCreateModalOpen: boolean;
@@ -19,16 +19,16 @@ interface KanbanState {
 
   // Actions
   setRuns: (runs: Run[]) => void;
-  setArchivedRuns: (runs: Run[]) => void;
+  setCompletedRuns: (runs: Run[]) => void;
   addRun: (run: Run) => void;
   updateRun: (run: Run) => void;
-  moveToArchive: (runId: string) => void;
-  restoreFromArchive: (run: Run) => void;
+  moveToCompleted: (runId: string) => void;
+  restoreFromCompleted: (run: Run) => void;
 
   setSites: (sites: Site[]) => void;
   setSyncState: (state: SyncState) => void;
 
-  setView: (view: "kanban" | "archive" | "settings") => void;
+  setView: (view: "kanban" | "completed" | "settings") => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   openCreateModal: () => void;
@@ -41,7 +41,7 @@ interface KanbanState {
 export const useKanbanStore = create<KanbanState>((set) => ({
   // Initial Data
   runs: [],
-  archivedRuns: [],
+  completedRuns: [],
   sites: [],
   syncState: null,
 
@@ -56,7 +56,7 @@ export const useKanbanStore = create<KanbanState>((set) => ({
 
   // Actions
   setRuns: (runs) => set({ runs }),
-  setArchivedRuns: (runs) => set({ archivedRuns: runs }),
+  setCompletedRuns: (runs) => set({ completedRuns: runs }),
   addRun: (run) =>
     set((state) => ({
       runs: [run, ...state.runs],
@@ -65,18 +65,18 @@ export const useKanbanStore = create<KanbanState>((set) => ({
     set((state) => ({
       runs: state.runs.map((r) => (r.id === run.id ? run : r)),
     })),
-  moveToArchive: (runId) =>
+  moveToCompleted: (runId) =>
     set((state) => {
       const run = state.runs.find((r) => r.id === runId);
       if (!run) return state;
       return {
         runs: state.runs.filter((r) => r.id !== runId),
-        archivedRuns: [{ ...run, archivedAt: new Date().toISOString() }, ...state.archivedRuns],
+        completedRuns: [{ ...run, completedAt: new Date().toISOString() }, ...state.completedRuns],
       };
     }),
-  restoreFromArchive: (run) =>
+  restoreFromCompleted: (run) =>
     set((state) => ({
-      archivedRuns: state.archivedRuns.filter((r) => r.id !== run.id),
+      completedRuns: state.completedRuns.filter((r) => r.id !== run.id),
       runs: [run, ...state.runs],
     })),
 

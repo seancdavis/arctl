@@ -24,8 +24,8 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    path: "/archive",
-    label: COPY.nav.archive,
+    path: "/completed",
+    label: COPY.nav.completed,
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
