@@ -2,50 +2,38 @@ import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { sites } from "../../db/schema.ts";
 import { eq } from "drizzle-orm";
+import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
+  let auth;
+  try {
+    auth = await requireAuth(req);
+  } catch (err) {
+    return handleAuthError(err);
+  }
+
   const url = new URL(req.url);
   const pathParts = url.pathname.split("/");
   const siteId = pathParts[pathParts.length - 1];
 
   if (!siteId) {
-    return new Response(JSON.stringify({ error: "Site ID required" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ error: "Site ID required" }, { status: 400 });
   }
 
-  if (req.method === "PATCH") {
-    const body = await req.json();
-    const { syncEnabled } = body;
+  if (req.method === "DELETE") {
+    const [deleted] = await db
+      .delete(sites)
+      .where(eq(sites.id, siteId))
+      .returning();
 
-    console.log(`[site] PATCH ${siteId} syncEnabled=${syncEnabled}`);
-
-    const [existing] = await db.select().from(sites).where(eq(sites.id, siteId));
-
-    if (!existing) {
-      return new Response(JSON.stringify({ error: "Site not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!deleted) {
+      return Response.json({ error: "Site not found" }, { status: 404 });
     }
 
-    await db
-      .update(sites)
-      .set({ syncEnabled: syncEnabled ?? existing.syncEnabled })
-      .where(eq(sites.id, siteId));
-
-    const [updated] = await db.select().from(sites).where(eq(sites.id, siteId));
-
-    return new Response(JSON.stringify(updated), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ ok: true });
   }
 
-  return new Response(JSON.stringify({ error: "Method not allowed" }), {
-    status: 405,
-    headers: { "Content-Type": "application/json" },
-  });
+  return Response.json({ error: "Method not allowed" }, { status: 405 });
 };
 
 export const config: Config = {

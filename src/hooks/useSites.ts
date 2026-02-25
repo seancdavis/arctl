@@ -1,6 +1,10 @@
 import { useEffect, useCallback } from "react";
 import { useKanbanStore } from "../store/kanbanStore";
-import { fetchSites, toggleSiteSync as apiToggleSiteSync } from "../api/sitesApi";
+import {
+  fetchSites,
+  addSite as apiAddSite,
+  removeSite as apiRemoveSite,
+} from "../api/sitesApi";
 
 export function useSites() {
   const { sites, setSites, setError } = useKanbanStore();
@@ -14,11 +18,19 @@ export function useSites() {
     }
   }, [setSites, setError]);
 
-  const toggleSiteSync = useCallback(
-    async (siteId: string, syncEnabled: boolean) => {
-      const updated = await apiToggleSiteSync(siteId, syncEnabled);
-      setSites(sites.map((s) => (s.id === siteId ? updated : s)));
-      return updated;
+  const addSite = useCallback(
+    async (id: string, name: string) => {
+      const added = await apiAddSite(id, name);
+      setSites([...sites, added]);
+      return added;
+    },
+    [sites, setSites]
+  );
+
+  const removeSite = useCallback(
+    async (siteId: string) => {
+      await apiRemoveSite(siteId);
+      setSites(sites.filter((s) => s.id !== siteId));
     },
     [sites, setSites]
   );
@@ -30,6 +42,7 @@ export function useSites() {
   return {
     sites,
     loadSites,
-    toggleSiteSync,
+    addSite,
+    removeSite,
   };
 }

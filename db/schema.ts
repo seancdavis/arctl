@@ -109,7 +109,6 @@ export const sites = pgTable("sites", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
-  syncEnabled: boolean("sync_enabled").default(false).notNull(),
 });
 
 export type User = typeof users.$inferSelect;

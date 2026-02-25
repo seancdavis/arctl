@@ -1,14 +1,10 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { sites } from "../../db/schema.ts";
-import { desc } from "drizzle-orm";
+import { asc } from "drizzle-orm";
 import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
-  if (req.method !== "GET") {
-    return Response.json({ error: "Method not allowed" }, { status: 405 });
-  }
-
   let auth;
   try {
     auth = await requireAuth(req);
@@ -16,58 +12,33 @@ export default async (req: Request, context: Context) => {
     return handleAuthError(err);
   }
 
-  // Try to get sites from cache first
-  const cachedSites = await db.select().from(sites).orderBy(desc(sites.updatedAt));
-
-  // Check if cache is fresh (less than 5 minutes old)
-  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-  const hasFreshCache =
-    cachedSites.length > 0 &&
-    cachedSites.some((s) => s.updatedAt > fiveMinutesAgo);
-
-  if (hasFreshCache) {
-    console.log(`[sites] Returning ${cachedSites.length} cached sites`);
-    return Response.json(cachedSites);
+  if (req.method === "GET") {
+    const result = await db.select().from(sites).orderBy(asc(sites.name));
+    return Response.json(result);
   }
 
-  console.log("[sites] Cache stale, fetching from Netlify API");
+  if (req.method === "POST") {
+    const body = await req.json();
+    const { id, name } = body;
 
-  // Fetch sites from Netlify API
-  const sitesRes = await fetch(
-    "https://api.netlify.com/api/v1/sites?per_page=100",
-    { headers: { Authorization: `Bearer ${auth.accessToken}` } }
-  );
-
-  if (!sitesRes.ok) {
-    // If API fails but we have cached data, return that
-    if (cachedSites.length > 0) {
-      return Response.json(cachedSites);
+    if (!id || !name) {
+      return Response.json({ error: "id and name are required" }, { status: 400 });
     }
-    return Response.json({ error: "Failed to fetch sites" }, { status: 502 });
-  }
 
-  const netlifySites = await sitesRes.json();
-  const now = new Date();
-
-  // Update cache - upsert each site
-  for (const site of netlifySites) {
-    await db
+    const now = new Date();
+    const [site] = await db
       .insert(sites)
-      .values({
-        id: site.id,
-        name: site.name,
-        updatedAt: now,
-      })
+      .values({ id, name, updatedAt: now })
       .onConflictDoUpdate({
         target: sites.id,
-        set: { name: site.name, updatedAt: now },
-      });
+        set: { name, updatedAt: now },
+      })
+      .returning();
+
+    return Response.json(site);
   }
 
-  const result = await db.select().from(sites).orderBy(desc(sites.updatedAt));
-  console.log(`[sites] Fetched and cached ${result.length} sites`);
-
-  return Response.json(result);
+  return Response.json({ error: "Method not allowed" }, { status: 405 });
 };
 
 export const config: Config = {
