@@ -15,6 +15,7 @@ export const users = pgTable("users", {
   fullName: text("full_name"),
   avatarUrl: text("avatar_url"),
   accessToken: text("access_token").notNull(),
+  isAllowed: boolean("is_allowed").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

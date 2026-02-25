@@ -100,8 +100,7 @@ export default async (request: Request, _context: Context) => {
   console.log("[auth-callback] User authenticated:", netlifyUser.email);
 
   // Backfill any unowned runs/notes to this user (covers pre-auth data)
-  const allowedIds = (Netlify.env.get("ALLOWED_NETLIFY_USER_IDS") || "").split(",").map((s) => s.trim());
-  if (allowedIds.includes(netlifyUser.id)) {
+  if (user.isAllowed) {
     const [runsResult] = await db.update(runs).set({ userId: user.id }).where(isNull(runs.userId)).returning({ id: runs.id });
     const [notesResult] = await db.update(notes).set({ userId: user.id }).where(isNull(notes.userId)).returning({ id: notes.id });
     if (runsResult || notesResult) {

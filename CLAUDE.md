@@ -37,7 +37,7 @@ netlify/functions/
   auth-login.mts     # GET /api/auth/login (OAuth redirect)
   auth-callback.mts  # GET /api/auth/callback (OAuth token exchange)
   auth-logout.mts    # GET,POST /api/auth/logout
-  auth-session.mts   # GET /api/auth/session (current user + allowlist check)
+  auth-session.mts   # GET /api/auth/session (current user + isAllowed check)
   runs.mts           # GET/POST /api/runs
   run.mts            # GET/PATCH /api/runs/:id (?sync=true for live refresh)
   run-sessions.mts   # POST /api/runs/:id/sessions
@@ -76,9 +76,9 @@ src/
 ### Authentication & Authorization
 - **Netlify OAuth**: Users sign in via Netlify OAuth. Access token stored in `users` table.
 - **Session cookies**: HMAC-SHA256 signed `oc_session` cookie, 7-day TTL.
-- **Allowlist**: `ALLOWED_NETLIFY_USER_IDS` env var controls who can access the app. Non-allowed users see a "coming soon" page.
+- **Allowlist**: `isAllowed` boolean column on the `users` table controls who can access the app. Non-allowed users see a "coming soon" page. Manage via Drizzle Studio or future admin UI.
 - **Auth gate**: `AuthProvider` in `src/lib/auth.tsx` wraps the app. `AuthGate` in `App.tsx` renders LoginPage/ComingSoonPage based on auth status.
-- **`requireAuth(req)`**: Central helper in `_shared/auth.mts` — validates session, checks allowlist, returns `{ userId, accessToken, user }`.
+- **`requireAuth(req)`**: Central helper in `_shared/auth.mts` — validates session, checks `isAllowed` column, returns `{ userId, accessToken, user }`.
 - **All API routes** (except auth-* and proxy) use `requireAuth()` at the top.
 - **Frontend API clients** use `fetchWithAuth()` wrapper that redirects to login on 401.
 
@@ -89,7 +89,7 @@ src/
 - All proxy requests logged to `audit_log` table.
 
 ### Database Schema (Drizzle)
-- **users**: id (uuid), netlifyUserId, email, fullName, avatarUrl, accessToken, timestamps
+- **users**: id (uuid), netlifyUserId, email, fullName, avatarUrl, accessToken, isAllowed, timestamps
 - **runs**: id, siteId, siteName, title, state, branch, pullRequestUrl, pullRequestState, pullRequestBranch, deployPreviewUrl, timestamps (with timezone), prCommittedAt, prNeedsUpdate, prCheckStatus, mergedAt, completedAt, userId (FK→users, nullable)
 - **sessions**: id, runId, state, prompt, timestamps (with timezone), title, result, duration (seconds), doneAt, mode, hasResultDiff
 - **notes**: id, runId, content, createdAt (with timezone), userId (FK→users, nullable)
@@ -143,7 +143,6 @@ The `?sync=true` query param on `/api/runs/:id` fetches from Netlify API, update
 - `NETLIFY_OAUTH_CLIENT_ID` - OAuth app client ID (from app.netlify.com/user/applications)
 - `NETLIFY_OAUTH_CLIENT_SECRET` - OAuth app secret
 - `SESSION_SECRET` - Random hex string for HMAC cookie signing (`openssl rand -hex 32`)
-- `ALLOWED_NETLIFY_USER_IDS` - Comma-separated Netlify user IDs for access allowlist
 - `NETLIFY_REDIRECT_URI` - Full callback URL (e.g., `https://your-app.netlify.app/api/auth/callback`)
 - `NETLIFY_PAT` - Fallback-only for sync worker when no user token available
 - `GITHUB_PAT` - GitHub Personal Access Token (required for PR status checks, merging)
@@ -153,7 +152,7 @@ The `?sync=true` query param on `/api/runs/:id` fetches from Netlify API, update
 ### Data Scoping
 - **All run/note queries are scoped by `userId`** — users only see their own data.
 - Sync worker attributes new runs to the token owner's userId.
-- `auth-callback.mts` backfills any unowned records (null userId) to the signing-in user if they're on the allowlist. This handles data created before auth was added.
+- `auth-callback.mts` backfills any unowned records (null userId) to the signing-in user if `isAllowed` is true. This handles data created before auth was added.
 
 ## Development Commands
 
@@ -194,7 +193,7 @@ npm run db:studio    # Open Drizzle Studio
 
 - [x] Netlify OAuth authentication (login/callback/logout/session)
 - [x] Session cookie auth (HMAC-SHA256, 7-day TTL)
-- [x] User allowlist via ALLOWED_NETLIFY_USER_IDS env var
+- [x] User allowlist via `isAllowed` column on users table
 - [x] Auth gate (LoginPage, ComingSoonPage, AuthGate wrapper)
 - [x] All API routes protected with requireAuth()
 - [x] OAuth tokens replace NETLIFY_PAT for all Netlify API calls
