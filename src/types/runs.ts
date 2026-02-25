@@ -54,7 +54,17 @@ export interface Site {
   id: string;
   name: string;
   updatedAt: string;
-  syncEnabled: boolean;
+}
+
+export interface Account {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+export interface AccountSite {
+  id: string;
+  name: string;
 }
 
 export interface SyncState {

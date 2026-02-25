@@ -16,9 +16,7 @@ export function SitePicker({
   lastUsedSiteId,
 }: SitePickerProps) {
   const sortedSites = useMemo(() => {
-    return [...sites]
-      .filter((site) => site.syncEnabled)
-      .sort((a, b) => {
+    return [...sites].sort((a, b) => {
         if (a.id === lastUsedSiteId) return -1;
         if (b.id === lastUsedSiteId) return 1;
         return (

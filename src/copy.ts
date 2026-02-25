@@ -173,12 +173,22 @@ export const COPY = {
   },
 
   settings: {
-    heading: "Sync Configuration",
+    heading: "Target Configuration",
     description:
-      "Enable targets for operational sync. Only active targets will be scanned during sweep cycles.",
-    siteCount: (enabled: number, total: number) =>
-      `${enabled} of ${total} targets active`,
-    noSites: "No targets found. Targets will appear here after loading.",
+      "Manage targets for operational sync. Added targets will be scanned during sweep cycles.",
+    siteCount: (count: number) => `${count} target${count !== 1 ? "s" : ""} active`,
+    noSites: "No targets added. Use the button above to add a target.",
+    addSite: "Add Target",
+    addSiteTitle: "Add Target",
+    removeSite: "Remove",
+    pickTeam: "Select a team",
+    pickSite: "Select a target",
+    loadingTeams: "Loading teams...",
+    loadingSites: "Loading targets...",
+    alreadyAdded: "Already added",
+    back: "Back",
+    noTeams: "No teams found.",
+    noSitesInTeam: "No targets found in this team.",
   },
 
   sync: {
