@@ -3,8 +3,8 @@ import { useKanbanStore } from "../store/kanbanStore";
 import {
   fetchRuns,
   createRun as apiCreateRun,
-  archiveRun as apiArchiveRun,
-  unarchiveRun as apiUnarchiveRun,
+  completeRun as apiCompleteRun,
+  uncompleteRun as apiUncompleteRun,
   addSession as apiAddSession,
   createPullRequest as apiCreatePullRequest,
   updatePullRequest as apiUpdatePullRequest,
@@ -15,35 +15,35 @@ import type { CreateRunRequest } from "../types/runs";
 export function useRuns() {
   const {
     runs,
-    archivedRuns,
+    completedRuns,
     isLoading,
     error,
     setRuns,
-    setArchivedRuns,
+    setCompletedRuns,
     setLoading,
     setError,
     addRun,
     updateRun,
-    moveToArchive,
-    restoreFromArchive,
+    moveToCompleted,
+    restoreFromCompleted,
   } = useKanbanStore();
 
   const loadRuns = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [activeRuns, archived] = await Promise.all([
+      const [activeRuns, completed] = await Promise.all([
         fetchRuns(false),
         fetchRuns(true),
       ]);
       setRuns(activeRuns);
-      setArchivedRuns(archived);
+      setCompletedRuns(completed);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load runs");
     } finally {
       setLoading(false);
     }
-  }, [setRuns, setArchivedRuns, setLoading, setError]);
+  }, [setRuns, setCompletedRuns, setLoading, setError]);
 
   const createRun = useCallback(
     async (data: CreateRunRequest) => {
@@ -54,22 +54,22 @@ export function useRuns() {
     [addRun]
   );
 
-  const archiveRun = useCallback(
+  const completeRun = useCallback(
     async (id: string) => {
-      const run = await apiArchiveRun(id);
-      moveToArchive(id);
+      const run = await apiCompleteRun(id);
+      moveToCompleted(id);
       return run;
     },
-    [moveToArchive]
+    [moveToCompleted]
   );
 
-  const unarchiveRun = useCallback(
+  const uncompleteRun = useCallback(
     async (id: string) => {
-      const run = await apiUnarchiveRun(id);
-      restoreFromArchive(run);
+      const run = await apiUncompleteRun(id);
+      restoreFromCompleted(run);
       return run;
     },
-    [restoreFromArchive]
+    [restoreFromCompleted]
   );
 
   const addSession = useCallback(
@@ -114,13 +114,13 @@ export function useRuns() {
 
   return {
     runs,
-    archivedRuns,
+    completedRuns,
     isLoading,
     error,
     loadRuns,
     createRun,
-    archiveRun,
-    unarchiveRun,
+    completeRun,
+    uncompleteRun,
     addSession,
     createPullRequest,
     updatePullRequest,

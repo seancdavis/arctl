@@ -17,8 +17,8 @@ export interface RunWithSessions extends Run {
   notes: Note[];
 }
 
-export async function fetchRuns(archived = false): Promise<Run[]> {
-  const url = archived ? `${API_BASE}/runs?archived=true` : `${API_BASE}/runs`;
+export async function fetchRuns(completed = false): Promise<Run[]> {
+  const url = completed ? `${API_BASE}/runs?completed=true` : `${API_BASE}/runs`;
   const res = await fetchWithAuth(url);
   if (!res.ok) {
     throw new Error(`Failed to fetch runs: ${res.statusText}`);
@@ -70,12 +70,12 @@ export async function updateRun(
   return res.json();
 }
 
-export async function archiveRun(id: string): Promise<Run> {
-  return updateRun(id, { archived: true });
+export async function completeRun(id: string): Promise<Run> {
+  return updateRun(id, { completed: true });
 }
 
-export async function unarchiveRun(id: string): Promise<Run> {
-  return updateRun(id, { archived: false });
+export async function uncompleteRun(id: string): Promise<Run> {
+  return updateRun(id, { completed: false });
 }
 
 export async function addSession(

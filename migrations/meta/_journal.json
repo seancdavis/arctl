@@ -15,6 +15,13 @@
       "when": 1771604520313,
       "tag": "20260220162200_brown_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771934528000,
+      "tag": "20260224112208_rename_archived_to_completed",
+      "breakpoints": true
     }
   ]
 }

@@ -46,7 +46,7 @@ A key with all three scopes has full access. If a request requires a scope the k
 GET /agent_runners
 ```
 
-Returns all runners for the API key's site.
+Returns all runners for the API key's site. Completed runners are excluded by default.
 
 **Query parameters:**
 
@@ -55,6 +55,7 @@ Returns all runners for the API key's site.
 | `page` | integer | Page number (default: 1) |
 | `per_page` | integer | Results per page (default/max: 100) |
 | `state` | string | Filter by state: `live`, `error` |
+| `include_completed` | string | Set to `true` to include completed runners |
 
 **Scope:** `agent_runners:read`
 
@@ -65,7 +66,7 @@ curl -H "Authorization: Bearer oc_abc123..." \
   https://<your-app>.netlify.app/api/proxy/agent_runners
 ```
 
-**Response:** Array of runner objects. All runners include a `derived_state` field. Runners with a `pr_url` are enriched with additional PR status fields (see [Response Enrichment](#response-enrichment)). Runners in `error` state include an `error_message` field.
+**Response:** Array of runner objects. All runners include `derived_state`, `completed`, and `completed_at` fields. Runners with a `pr_url` are enriched with additional PR status fields (see [Response Enrichment](#response-enrichment)). Runners in `error` state include an `error_message` field.
 
 ```json
 [
@@ -87,7 +88,9 @@ curl -H "Authorization: Bearer oc_abc123..." \
     "pr_behind_by": 0,
     "pr_review_state": "approved",
     "pr_checks_status": "success",
-    "derived_state": "done"
+    "derived_state": "done",
+    "completed": false,
+    "completed_at": null
   }
 ]
 ```
@@ -158,13 +161,41 @@ Stops the currently running session.
 
 ---
 
-### Archive Runner
+### Complete Runner
+
+```
+POST /agent_runners/{runner_id}/complete
+```
+
+Marks a runner as completed in arctl. Completed runners are hidden from the default `GET /agent_runners` listing. This is an arctl-level action — it does not affect the runner's state in the Netlify API.
+
+**Scope:** `agent_runners:write`
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer oc_abc123..." \
+  https://<your-app>.netlify.app/api/proxy/agent_runners/RUNNER_ID/complete
+```
+
+**Response:**
+
+```json
+{
+  "id": "runner-id",
+  "completed": true,
+  "completed_at": "2026-02-24T12:00:00.000Z"
+}
+```
+
+---
+
+### Archive Runner (Netlify)
 
 ```
 POST /agent_runners/{runner_id}/archive
 ```
 
-Archives a runner (soft delete). Archived runners no longer appear in the default listing.
+Archives a runner at the Netlify API level (soft delete on Netlify's side). This is separate from "completing" — archiving changes the runner's state in the Netlify API to `archived`.
 
 **Scope:** `agent_runners:write`
 

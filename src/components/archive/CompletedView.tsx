@@ -2,13 +2,13 @@ import type { Run } from "../../types/runs";
 import { Skeleton } from "../ui/Skeleton";
 import { COPY } from "../../copy";
 
-interface ArchiveViewProps {
+interface CompletedViewProps {
   runs: Run[];
   isLoading: boolean;
-  onUnarchive: (id: string) => void;
+  onUncomplete: (id: string) => void;
 }
 
-export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) {
+export function CompletedView({ runs, isLoading, onUncomplete }: CompletedViewProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, {
@@ -50,10 +50,10 @@ export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) 
           />
         </svg>
         <h3 className="text-lg font-mono font-medium text-[var(--text-primary)] mb-1">
-          {COPY.archive.emptyTitle}
+          {COPY.completed.emptyTitle}
         </h3>
         <p className="text-sm font-mono">
-          {COPY.archive.emptyMessage}
+          {COPY.completed.emptyMessage}
         </p>
       </div>
     );
@@ -65,25 +65,25 @@ export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) 
         <thead className="bg-[var(--surface-3)]">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              {COPY.archive.colTitle}
+              {COPY.completed.colTitle}
             </th>
             <th className="px-6 py-3 text-left text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              {COPY.archive.colSite}
+              {COPY.completed.colSite}
             </th>
             <th className="px-6 py-3 text-left text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              {COPY.archive.colState}
+              {COPY.completed.colState}
             </th>
             <th className="px-6 py-3 text-left text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              {COPY.archive.colCreated}
+              {COPY.completed.colCreated}
             </th>
             <th className="px-6 py-3 text-left text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              {COPY.archive.colArchived}
+              {COPY.completed.colCompleted}
             </th>
             <th className="px-6 py-3 text-left text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              {COPY.archive.colLinks}
+              {COPY.completed.colLinks}
             </th>
             <th className="px-6 py-3 text-right text-xs font-mono font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-              {COPY.archive.colActions}
+              {COPY.completed.colActions}
             </th>
           </tr>
         </thead>
@@ -104,12 +104,12 @@ export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) 
             <tr key={run.id} className="hover:bg-[var(--surface-3)]/50">
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm font-mono font-medium text-[var(--text-primary)] max-w-xs truncate">
-                  {run.title || COPY.archive.untitled}
+                  {run.title || COPY.completed.untitled}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm font-mono text-[var(--text-secondary)]">
-                  {run.siteName || COPY.archive.unknownSite}
+                  {run.siteName || COPY.completed.unknownSite}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -125,7 +125,7 @@ export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) 
                 {formatDate(run.createdAt)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-[var(--text-secondary)]">
-                {run.archivedAt ? formatDate(run.archivedAt) : "-"}
+                {run.completedAt ? formatDate(run.completedAt) : "-"}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
                 <div className="flex gap-2">
@@ -136,7 +136,7 @@ export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) 
                       rel="noopener noreferrer"
                       className="font-mono text-[var(--accent-blue)] hover:brightness-125"
                     >
-                      {COPY.archive.pr}
+                      {COPY.completed.pr}
                     </a>
                   )}
                   {run.deployPreviewUrl && (
@@ -146,7 +146,7 @@ export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) 
                       rel="noopener noreferrer"
                       className="font-mono text-[var(--accent-green)] hover:brightness-125"
                     >
-                      {COPY.archive.preview}
+                      {COPY.completed.preview}
                     </a>
                   )}
                   {!run.pullRequestUrl && !run.deployPreviewUrl && (
@@ -156,10 +156,10 @@ export function ArchiveView({ runs, isLoading, onUnarchive }: ArchiveViewProps) 
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                 <button
-                  onClick={() => onUnarchive(run.id)}
+                  onClick={() => onUncomplete(run.id)}
                   className="font-mono text-[var(--accent-blue)] hover:brightness-125 font-medium"
                 >
-                  {COPY.archive.restore}
+                  {COPY.completed.restore}
                 </button>
               </td>
             </tr>

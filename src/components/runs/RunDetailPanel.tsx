@@ -9,7 +9,7 @@ import { NoteCard } from "./NoteCard";
 import { COPY } from "../../copy";
 
 interface RunDetailPanelProps {
-  onArchive: (id: string) => void;
+  onComplete: (id: string) => void;
   onCreatePR: (id: string) => void;
   onUpdatePR: (id: string) => void;
   onMergePR: (id: string) => void;
@@ -472,7 +472,7 @@ function PrStatusSection({
 }
 
 export function RunDetailPanel({
-  onArchive,
+  onComplete,
   onCreatePR,
   onUpdatePR,
   onMergePR,
@@ -560,9 +560,9 @@ export function RunDetailPanel({
     return () => document.removeEventListener("keydown", handler);
   }, [close]);
 
-  const handleArchive = () => {
+  const handleComplete = () => {
     if (!id) return;
-    onArchive(id);
+    onComplete(id);
     close();
   };
 
@@ -716,7 +716,7 @@ export function RunDetailPanel({
 
                 <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
                   <span className="text-[var(--text-tertiary)] font-mono">{COPY.detail.site}</span>
-                  <span className="text-[var(--text-primary)]">{run.siteName || COPY.archive.unknownSite}</span>
+                  <span className="text-[var(--text-primary)]">{run.siteName || COPY.board.unknownSite}</span>
 
                   {run.branch && (
                     <>
@@ -909,10 +909,10 @@ export function RunDetailPanel({
                 </button>
               )}
               <button
-                onClick={handleArchive}
+                onClick={handleComplete}
                 className="px-4 py-2 text-sm font-mono text-[var(--text-secondary)] hover:bg-[var(--surface-3)] transition-colors ml-auto"
               >
-                {COPY.detail.archive}
+                {COPY.detail.complete}
               </button>
             </div>
           </div>

@@ -33,7 +33,7 @@ export const runs = pgTable("runs", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   syncedAt: timestamp("synced_at", { withTimezone: true }),
-  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
   prCommittedAt: timestamp("pr_committed_at", { withTimezone: true }),
   prNeedsUpdate: boolean("pr_needs_update").default(false).notNull(),
   prCheckStatus: text("pr_check_status"), // pending, success, failure

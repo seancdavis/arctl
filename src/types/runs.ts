@@ -17,7 +17,7 @@ export interface Run {
   createdAt: string;
   updatedAt: string;
   syncedAt: string | null;
-  archivedAt: string | null;
+  completedAt: string | null;
   prCommittedAt: string | null;
   prNeedsUpdate: boolean;
   prCheckStatus: string | null;
@@ -77,7 +77,7 @@ export interface AddSessionRequest {
 }
 
 export interface UpdateRunRequest {
-  archived?: boolean;
+  completed?: boolean;
 }
 
 export interface PrCheckRun {
@@ -98,7 +98,7 @@ export interface PrStatus {
 }
 
 export function getKanbanColumn(run: Run): KanbanColumn | null {
-  if (run.archivedAt) return null;
+  if (run.completedAt) return null;
 
   switch (run.state) {
     case "NEW":
