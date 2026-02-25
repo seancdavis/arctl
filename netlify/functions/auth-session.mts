@@ -17,6 +17,7 @@ export default async (request: Request, _context: Context) => {
       email: users.email,
       fullName: users.fullName,
       avatarUrl: users.avatarUrl,
+      isAllowed: users.isAllowed,
     })
     .from(users)
     .where(eq(users.id, userId))
@@ -26,15 +27,7 @@ export default async (request: Request, _context: Context) => {
     return Response.json({ user: null }, { status: 401 });
   }
 
-  // Check allowlist
-  const allowedIds = Netlify.env.get("ALLOWED_NETLIFY_USER_IDS");
-  let isAllowed = true;
-  if (allowedIds) {
-    const allowed = allowedIds.split(",").map((id) => id.trim());
-    isAllowed = allowed.includes(user.netlifyUserId);
-  }
-
-  return Response.json({ user, isAllowed });
+  return Response.json({ user, isAllowed: user.isAllowed });
 };
 
 export const config: Config = {

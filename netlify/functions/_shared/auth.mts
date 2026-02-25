@@ -34,13 +34,9 @@ export async function requireAuth(request: Request): Promise<AuthResult> {
     throw new AuthError("Unauthorized", 401);
   }
 
-  // Check allowlist
-  const allowedIds = Netlify.env.get("ALLOWED_NETLIFY_USER_IDS");
-  if (allowedIds) {
-    const allowed = allowedIds.split(",").map((id) => id.trim());
-    if (!allowed.includes(user.netlifyUserId)) {
-      throw new AuthError("Forbidden", 403);
-    }
+  // Check access
+  if (!user.isAllowed) {
+    throw new AuthError("Forbidden", 403);
   }
 
   return {
