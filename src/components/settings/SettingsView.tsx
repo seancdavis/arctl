@@ -4,7 +4,7 @@ import { AddSiteModal } from "./AddSiteModal";
 import { COPY } from "../../copy";
 
 export function SettingsView() {
-  const { sites, addSite, removeSite } = useSites();
+  const { sites, isLoading, addSite, removeSite } = useSites();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
@@ -43,11 +43,15 @@ export function SettingsView() {
       <div className="bg-[var(--surface-2)] border border-[var(--border)] divide-y divide-[var(--border-subtle)]">
         <div className="px-4 py-3 bg-[var(--surface-3)]">
           <span className="text-sm font-mono font-medium text-[var(--text-secondary)]">
-            {COPY.settings.siteCount(sites.length)}
+            {isLoading ? COPY.generic.loading : COPY.settings.siteCount(sites.length)}
           </span>
         </div>
 
-        {sortedSites.length === 0 ? (
+        {isLoading ? (
+          <div className="px-4 py-8 text-center font-mono text-[var(--text-secondary)]">
+            {COPY.generic.loading}
+          </div>
+        ) : sortedSites.length === 0 ? (
           <div className="px-4 py-8 text-center font-mono text-[var(--text-secondary)]">
             {COPY.settings.noSites}
           </div>

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { useKanbanStore } from "../store/kanbanStore";
 import {
   fetchSites,
@@ -8,13 +8,17 @@ import {
 
 export function useSites() {
   const { sites, setSites, setError } = useKanbanStore();
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadSites = useCallback(async () => {
+    setIsLoading(true);
     try {
       const fetchedSites = await fetchSites();
       setSites(fetchedSites);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load sites");
+    } finally {
+      setIsLoading(false);
     }
   }, [setSites, setError]);
 
@@ -41,6 +45,7 @@ export function useSites() {
 
   return {
     sites,
+    isLoading,
     loadSites,
     addSite,
     removeSite,
