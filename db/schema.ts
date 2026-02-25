@@ -6,6 +6,7 @@ import {
   boolean,
   uuid,
   jsonb,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -106,10 +107,15 @@ export const syncState = pgTable("sync_state", {
 });
 
 export const sites = pgTable("sites", {
-  id: text("id").primaryKey(),
+  id: text("id").notNull(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id),
   name: text("name").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
-});
+}, (table) => [
+  primaryKey({ columns: [table.id, table.userId] }),
+]);
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

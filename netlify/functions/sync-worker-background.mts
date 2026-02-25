@@ -43,8 +43,8 @@ export default async (req: Request, context: Context) => {
   const syncUserId = tokenOwner?.id || null;
   console.log(`[sync-worker] Token owner userId: ${syncUserId || "unknown"}`);
 
-  // Get all sites (all sites in the table are active)
-  const enabledSites = await db.select().from(sites);
+  // Get distinct site IDs (sites may appear multiple times for different users)
+  const enabledSites = await db.selectDistinct({ id: sites.id }).from(sites);
   const siteIds = enabledSites.map((s) => s.id);
 
   console.log(`[sync-worker] Found ${enabledSites.length} enabled sites to sync`);

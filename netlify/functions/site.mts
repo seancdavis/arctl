@@ -1,7 +1,7 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { sites } from "../../db/schema.ts";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
@@ -23,7 +23,7 @@ export default async (req: Request, context: Context) => {
   if (req.method === "DELETE") {
     const [deleted] = await db
       .delete(sites)
-      .where(eq(sites.id, siteId))
+      .where(and(eq(sites.id, siteId), eq(sites.userId, auth.userId)))
       .returning();
 
     if (!deleted) {

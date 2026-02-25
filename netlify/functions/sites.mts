@@ -1,7 +1,7 @@
 import type { Context, Config } from "@netlify/functions";
 import { db } from "../../db/index.ts";
 import { sites } from "../../db/schema.ts";
-import { asc } from "drizzle-orm";
+import { asc, eq, and } from "drizzle-orm";
 import { requireAuth, handleAuthError } from "./_shared/auth.mts";
 
 export default async (req: Request, context: Context) => {
@@ -13,7 +13,11 @@ export default async (req: Request, context: Context) => {
   }
 
   if (req.method === "GET") {
-    const result = await db.select().from(sites).orderBy(asc(sites.name));
+    const result = await db
+      .select()
+      .from(sites)
+      .where(eq(sites.userId, auth.userId))
+      .orderBy(asc(sites.name));
     return Response.json(result);
   }
 
@@ -28,9 +32,9 @@ export default async (req: Request, context: Context) => {
     const now = new Date();
     const [site] = await db
       .insert(sites)
-      .values({ id, name, updatedAt: now })
+      .values({ id, name, userId: auth.userId, updatedAt: now })
       .onConflictDoUpdate({
-        target: sites.id,
+        target: [sites.id, sites.userId],
         set: { name, updatedAt: now },
       })
       .returning();
